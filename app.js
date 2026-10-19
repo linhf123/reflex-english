@@ -45,6 +45,26 @@
     rateButton: document.getElementById("rate-button"),
     rateLabel: document.getElementById("rate-label"),
     shuffleButton: document.getElementById("shuffle-button"),
+    listenAll: document.getElementById("listen-all"),
+    listenDock: document.getElementById("listen-dock"),
+    listenStateLabel: document.getElementById("listen-state-label"),
+    listenPositionHead: document.getElementById("listen-position-head"),
+    listenScene: document.getElementById("listen-scene"),
+    listenWordCount: document.getElementById("listen-word-count"),
+    listenStar: document.getElementById("listen-star"),
+    listenStarLabel: document.getElementById("listen-star-label"),
+    listenMastery: document.getElementById("listen-mastery"),
+    listenMasteryLabel: document.getElementById("listen-mastery-label"),
+    listenEn: document.getElementById("listen-en"),
+    listenZh: document.getElementById("listen-zh"),
+    listenProgressBar: document.getElementById("listen-progress-bar"),
+    listenToggle: document.getElementById("listen-toggle"),
+    listenMiniToggle: document.getElementById("listen-mini-toggle"),
+    listenPrev: document.getElementById("listen-prev"),
+    listenNext: document.getElementById("listen-next"),
+    listenCollapse: document.getElementById("listen-collapse"),
+    listenClose: document.getElementById("listen-close"),
+    listenJump: document.getElementById("listen-jump"),
     browseAll: document.getElementById("browse-all"),
     startPractice: document.getElementById("start-practice"),
     navPractice: document.getElementById("nav-practice"),
@@ -104,6 +124,7 @@
     query: "",
     visible: PAGE_SIZE,
     practice: null,
+    listen: null,
   };
 
   let progress = loadProgress();
@@ -112,6 +133,7 @@
   let lastFocusedElement = null;
   let voices = [];
   let speakingButton = null;
+  let activeSpeech = null;
 
   function loadProgress() {
     const fallback = {
@@ -392,6 +414,7 @@
       : "";
     updateHeading(filtered);
     updateProgressUI();
+    syncListeningCardHighlight();
   }
 
   function updateProgressUI() {
@@ -430,6 +453,7 @@
     progress.starred = [...set];
     saveProgress();
     renderCards();
+    if (state.listen) renderListeningDock();
   }
 
   function setMastered(id, value, options = {}) {
@@ -441,6 +465,7 @@
     progress.mastered = [...set];
     saveProgress();
     renderCards();
+    if (state.listen) renderListeningDock();
 
     if (state.practice?.revealed) {
       const current = sentenceMap.get(state.practice.queue[state.practice.index]);
@@ -487,7 +512,19 @@
   function clearSpeakingState() {
     if (speakingButton) speakingButton.classList.remove("is-speaking");
     speakingButton = null;
+    activeSpeech = null;
     document.querySelectorAll(".is-speaking").forEach((button) => button.classList.remove("is-speaking"));
+  }
+
+  function createUtterance(text) {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = progress.voiceLang;
+    utterance.rate = progress.rate;
+    utterance.pitch = 1;
+
+    const voice = findVoice(progress.voiceLang);
+    if (voice) utterance.voice = voice;
+    return utterance;
   }
 
   function speak(text, button = null) {
@@ -496,24 +533,24 @@
       return;
     }
 
+    if (state.listen) stopListening();
     window.speechSynthesis.cancel();
     clearSpeakingState();
 
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = progress.voiceLang;
-    utterance.rate = progress.rate;
-    utterance.pitch = 1;
-
-    const voice = findVoice(progress.voiceLang);
-    if (voice) utterance.voice = voice;
+    const utterance = createUtterance(text);
+    activeSpeech = utterance;
 
     if (button) {
       button.classList.add("is-speaking");
       speakingButton = button;
     }
 
-    utterance.onend = clearSpeakingState;
+    utterance.onend = () => {
+      if (activeSpeech !== utterance) return;
+      clearSpeakingState();
+    };
     utterance.onerror = () => {
+      if (activeSpeech !== utterance) return;
       clearSpeakingState();
       showToast("朗读没有成功，请再试一次");
     };
@@ -524,6 +561,251 @@
   function speakSentence(id, button = null) {
     const sentence = sentenceMap.get(id);
     if (sentence) speak(sentence.en, button);
+  }
+
+  function startListening() {
+    if (!("speechSynthesis" in window)) {
+      showToast("当前浏览器不支持连续朗读");
+      return;
+    }
+
+    if (state.listen) {
+      elements.listenDock.hidden = false;
+      if (!state.listen.playing) {
+        toggleListening();
+      } else {
+        elements.listenDock.focus?.();
+      }
+      return;
+    }
+
+    if (!elements.practiceModal.hidden) closePractice();
+    if (!elements.infoModal.hidden) closeInfo();
+
+    window.speechSynthesis.cancel();
+    clearSpeakingState();
+    state.listen = {
+      queue: sentences.map((sentence) => sentence.id),
+      index: 0,
+      playing: true,
+      finished: false,
+      collapsed: false,
+      utterance: null,
+      timer: 0,
+    };
+    elements.listenDock.hidden = false;
+    playListeningSentence();
+  }
+
+  function renderListeningDock() {
+    const listen = state.listen;
+    if (!listen) return;
+    const sentence = sentenceMap.get(listen.queue[listen.index]);
+    if (!sentence) return;
+    const scene = sceneMap.get(sentence.scene);
+    const total = listen.queue.length;
+    const position = `${String(sentence.id).padStart(3, "0")} / ${total}`;
+
+    elements.listenDock.classList.toggle("is-playing", listen.playing && !listen.finished);
+    elements.listenDock.classList.toggle("is-collapsed", listen.collapsed);
+    elements.listenStateLabel.textContent = listen.finished
+      ? "全部听完"
+      : listen.playing
+        ? "正在播放"
+        : "已暂停";
+    elements.listenPositionHead.textContent = position;
+    elements.listenScene.textContent = scene?.zh || "日常表达";
+    elements.listenScene.style.setProperty("--scene-color", sceneColor(sentence.scene));
+    elements.listenWordCount.textContent = `${sentence.words} words`;
+    const starred = progress.starred.includes(sentence.id);
+    const mastered = progress.mastered.includes(sentence.id);
+    elements.listenStar.classList.toggle("is-active", starred);
+    elements.listenStar.setAttribute("aria-pressed", String(starred));
+    elements.listenStar.setAttribute(
+      "aria-label",
+      starred ? "取消收藏当前句" : "收藏当前句",
+    );
+    elements.listenStarLabel.textContent = starred ? "已收藏" : "收藏";
+    elements.listenMastery.classList.toggle("is-active", mastered);
+    elements.listenMastery.setAttribute("aria-pressed", String(mastered));
+    elements.listenMastery.setAttribute(
+      "aria-label",
+      mastered ? "取消当前句的已掌握标记" : "标记当前句为已掌握",
+    );
+    elements.listenMasteryLabel.textContent = mastered ? "已掌握" : "标记掌握";
+    elements.listenEn.textContent = sentence.en;
+    elements.listenZh.textContent = sentence.zh;
+    elements.listenProgressBar.style.width = `${((listen.index + 1) / total) * 100}%`;
+    elements.listenToggle.setAttribute("aria-label", listen.playing ? "暂停连续播放" : "继续连续播放");
+    elements.listenMiniToggle.setAttribute("aria-label", listen.playing ? "暂停连续播放" : "继续连续播放");
+    elements.listenCollapse.setAttribute("aria-expanded", String(!listen.collapsed));
+    elements.listenCollapse.setAttribute(
+      "aria-label",
+      listen.collapsed ? "展开连续听播放器" : "收起连续听播放器",
+    );
+    syncListeningCardHighlight();
+  }
+
+  function syncListeningCardHighlight() {
+    document.querySelectorAll(".sentence-card.is-now-playing").forEach((card) => {
+      card.classList.remove("is-now-playing");
+    });
+    const listen = state.listen;
+    if (!listen) return;
+    const sentence = sentenceMap.get(listen.queue[listen.index]);
+    document.querySelector(`.sentence-card[data-id="${sentence?.id}"]`)?.classList.add("is-now-playing");
+  }
+
+  function playListeningSentence() {
+    const listen = state.listen;
+    if (!listen || !listen.playing) return;
+    const sentence = sentenceMap.get(listen.queue[listen.index]);
+    if (!sentence) return;
+
+    window.clearTimeout(listen.timer);
+    listen.utterance = null;
+    window.speechSynthesis.cancel();
+    clearSpeakingState();
+
+    const utterance = createUtterance(sentence.en);
+    listen.utterance = utterance;
+
+    utterance.onend = () => {
+      if (state.listen !== listen || listen.utterance !== utterance) return;
+      listen.utterance = null;
+      if (!listen.playing) return;
+
+      listen.timer = window.setTimeout(() => {
+        if (state.listen !== listen || !listen.playing || listen.utterance) return;
+        if (listen.index >= listen.queue.length - 1) {
+          finishListening();
+          return;
+        }
+        listen.index += 1;
+        renderListeningDock();
+        playListeningSentence();
+      }, 520);
+    };
+
+    utterance.onerror = (event) => {
+      if (state.listen !== listen || listen.utterance !== utterance) return;
+      if (event.error === "canceled" || event.error === "interrupted") return;
+      listen.utterance = null;
+      listen.playing = false;
+      renderListeningDock();
+      showToast("连续朗读中断了，请点播放继续");
+    };
+
+    renderListeningDock();
+    window.speechSynthesis.speak(utterance);
+  }
+
+  function pauseListening() {
+    const listen = state.listen;
+    if (!listen) return;
+    listen.playing = false;
+    listen.finished = false;
+    listen.utterance = null;
+    window.clearTimeout(listen.timer);
+    window.speechSynthesis.cancel();
+    clearSpeakingState();
+    renderListeningDock();
+  }
+
+  function resumeListening() {
+    const listen = state.listen;
+    if (!listen) return;
+    if (listen.finished) listen.index = 0;
+    listen.finished = false;
+    listen.playing = true;
+    playListeningSentence();
+  }
+
+  function toggleListening() {
+    const listen = state.listen;
+    if (!listen) return;
+    if (listen.playing) pauseListening();
+    else resumeListening();
+  }
+
+  function moveListening(direction) {
+    const listen = state.listen;
+    if (!listen) return;
+    const nextIndex = listen.index + direction;
+    if (nextIndex < 0) return;
+
+    listen.utterance = null;
+    window.clearTimeout(listen.timer);
+    window.speechSynthesis.cancel();
+    clearSpeakingState();
+
+    if (nextIndex >= listen.queue.length) {
+      finishListening();
+      return;
+    }
+
+    listen.index = nextIndex;
+    listen.finished = false;
+    listen.playing = true;
+    playListeningSentence();
+  }
+
+  function finishListening() {
+    const listen = state.listen;
+    if (!listen) return;
+    listen.playing = false;
+    listen.finished = true;
+    listen.utterance = null;
+    window.clearTimeout(listen.timer);
+    window.speechSynthesis.cancel();
+    clearSpeakingState();
+    renderListeningDock();
+  }
+
+  function stopListening() {
+    const listen = state.listen;
+    if (!listen) return;
+    window.clearTimeout(listen.timer);
+    listen.utterance = null;
+    state.listen = null;
+    window.speechSynthesis.cancel();
+    clearSpeakingState();
+    elements.listenDock.hidden = true;
+    syncListeningCardHighlight();
+  }
+
+  function toggleListeningCollapsed() {
+    const listen = state.listen;
+    if (!listen) return;
+    listen.collapsed = !listen.collapsed;
+    renderListeningDock();
+  }
+
+  function jumpToListeningSentence() {
+    const listen = state.listen;
+    if (!listen) return;
+    const sentence = sentenceMap.get(listen.queue[listen.index]);
+    if (!sentence) return;
+
+    state.scene = "all";
+    state.collection = "all";
+    state.query = "";
+    state.visible = Math.max(PAGE_SIZE, Math.ceil(sentence.id / PAGE_SIZE) * PAGE_SIZE);
+    elements.search.value = "";
+    document.querySelectorAll(".scene-pill").forEach((button) => {
+      button.classList.toggle("active", button.dataset.scene === "all");
+    });
+    document.querySelectorAll(".collection-pill").forEach((button) => {
+      button.classList.toggle("active", button.dataset.collection === "all");
+    });
+    renderCards();
+
+    window.setTimeout(() => {
+      document.querySelector(`.sentence-card[data-id="${sentence.id}"]`)?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }, 40);
   }
 
   function updateVoiceButton() {
@@ -589,6 +871,7 @@
   }
 
   function openPractice(options = {}) {
+    if (state.listen) stopListening();
     const count = options.count || 10;
     const queue = makePracticeQueue(count, options);
     if (!queue.length) {
@@ -876,6 +1159,7 @@
       progress.voiceLang = progress.voiceLang === "en-US" ? "en-GB" : "en-US";
       saveProgress();
       updateVoiceButton();
+      if (state.listen?.playing) playListeningSentence();
       showToast(progress.voiceLang === "en-US" ? "已切换为美式发音" : "已切换为英式发音");
     });
 
@@ -884,6 +1168,7 @@
       progress.rate = RATE_STEPS[(currentIndex + 1) % RATE_STEPS.length];
       saveProgress();
       updateRateButton();
+      if (state.listen?.playing) playListeningSentence();
       showToast(`朗读语速 ${progress.rate} 倍`);
     });
 
@@ -899,6 +1184,27 @@
       openPractice({ count: 10, useCurrentFilter: false });
     });
     elements.navPractice.addEventListener("click", startPracticeFromCurrent);
+
+    elements.listenAll.addEventListener("click", startListening);
+    elements.listenToggle.addEventListener("click", toggleListening);
+    elements.listenMiniToggle.addEventListener("click", toggleListening);
+    elements.listenPrev.addEventListener("click", () => moveListening(-1));
+    elements.listenNext.addEventListener("click", () => moveListening(1));
+    elements.listenCollapse.addEventListener("click", toggleListeningCollapsed);
+    elements.listenClose.addEventListener("click", stopListening);
+    elements.listenJump.addEventListener("click", jumpToListeningSentence);
+    elements.listenStar.addEventListener("click", () => {
+      const listen = state.listen;
+      if (!listen) return;
+      const id = listen.queue[listen.index];
+      toggleStar(id);
+    });
+    elements.listenMastery.addEventListener("click", () => {
+      const listen = state.listen;
+      if (!listen) return;
+      const id = listen.queue[listen.index];
+      setMastered(id, !progress.mastered.includes(id));
+    });
 
     elements.shuffleButton.addEventListener("click", () => {
       const pool = getFilteredSentences();
