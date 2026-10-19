@@ -28,8 +28,8 @@
         }
       })();
     </script>
-    <link rel="stylesheet" href="../shared/tokens.css?v=20261019-2" />
-    <link rel="stylesheet" href="coca.css?v=20261019-2" />
+    <link rel="stylesheet" href="../shared/tokens.css?v=20261019-3" />
+    <link rel="stylesheet" href="coca.css?v=20261019-3" />
   </head>
   <body>
     <a class="skip-link" href="#library">跳到词库</a>
@@ -189,6 +189,10 @@
               <span class="theme-icon" aria-hidden="true"></span>
               <span class="tool-label">主题</span>
             </button>
+            <button class="word-practice-button" id="word-practice" type="button">
+              <span aria-hidden="true"></span>
+              单词听写
+            </button>
           </div>
         </div>
       </div>
@@ -203,6 +207,12 @@
           </div>
           <div class="section-heading-right">
             <p id="result-count">5000 条</p>
+            <button class="listen-all-button" id="listen-all" type="button">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M5 13v-1a7 7 0 0 1 14 0v1M5 13h2.2v5H5.8A1.8 1.8 0 0 1 4 16.2v-1.4A1.8 1.8 0 0 1 5.8 13H5Zm14 0h-.8a1.8 1.8 0 0 1 1.8 1.8v1.4a1.8 1.8 0 0 1-1.8 1.8h-1.4v-5H19Z" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              听全部
+            </button>
             <label class="sort-control" for="sort-select">
               <span>排序</span>
               <select id="sort-select">
@@ -291,6 +301,94 @@
       </div>
     </footer>
 
+    <aside class="listen-dock" id="listen-dock" aria-label="COCA 连续听词播放器" hidden>
+      <div class="listen-dock-head">
+        <div class="listen-live">
+          <span class="listen-pulse" aria-hidden="true"><i></i><i></i><i></i></span>
+          <div>
+            <p id="listen-state-label">正在播放</p>
+            <span id="listen-position-head">0001 / 5000</span>
+          </div>
+        </div>
+        <div class="listen-head-actions">
+          <button class="listen-mini-toggle" id="listen-mini-toggle" type="button" aria-label="暂停">
+            <svg class="icon-pause" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M8.5 6.5v11M15.5 6.5v11" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" />
+            </svg>
+            <svg class="icon-play" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M9 6.3v11.4l9-5.7-9-5.7Z" fill="currentColor" />
+            </svg>
+          </button>
+          <button class="listen-icon-button listen-collapse" id="listen-collapse" type="button" aria-label="收起播放器" aria-expanded="true">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="m7 14 5-5 5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </button>
+          <button class="listen-icon-button" id="listen-close" type="button" aria-label="停止并关闭播放器">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="m7 7 10 10M17 7 7 17" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="listen-dock-body">
+        <div class="listen-progress">
+          <input
+            id="listen-scrubber"
+            type="range"
+            min="1"
+            max="5000"
+            value="1"
+            step="1"
+            aria-label="拖动跳转到指定单词"
+          />
+        </div>
+        <div class="listen-meta">
+          <span class="band-badge" id="listen-scene"></span>
+          <span id="listen-word-count"></span>
+          <div class="listen-meta-actions">
+            <button class="listen-mark-button listen-star-button" id="listen-star" type="button" aria-pressed="false">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="m12 3.7 2.56 5.18 5.72.83-4.14 4.04.98 5.7L12 16.76l-5.12 2.69.98-5.7-4.14-4.04 5.72-.83L12 3.7Z" stroke="currentColor" stroke-width="1.45" stroke-linejoin="round" />
+              </svg>
+              <span id="listen-star-label">收藏</span>
+            </button>
+            <button class="listen-mark-button listen-mastery-button" id="listen-mastery" type="button" aria-pressed="false">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="12" cy="12" r="8.4" stroke="currentColor" stroke-width="1.4" />
+                <path d="m8.3 12.2 2.4 2.4 5.2-5.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              <span id="listen-mastery-label">标记掌握</span>
+            </button>
+          </div>
+        </div>
+        <p class="listen-en" id="listen-en"></p>
+        <p class="listen-zh" id="listen-zh"></p>
+        <div class="listen-controls">
+          <button class="listen-control-button" id="listen-prev" type="button" aria-label="上一个单词">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M7.5 6v12M18 7.3v9.4L9.2 12 18 7.3Z" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </button>
+          <button class="listen-play-button" id="listen-toggle" type="button" aria-label="暂停连续播放">
+            <svg class="icon-pause" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M8.5 6.5v11M15.5 6.5v11" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" />
+            </svg>
+            <svg class="icon-play" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M9 6.3v11.4l9-5.7-9-5.7Z" fill="currentColor" />
+            </svg>
+          </button>
+          <button class="listen-control-button" id="listen-next" type="button" aria-label="下一个单词">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M16.5 6v12M6 7.3v9.4l8.8-4.7L6 7.3Z" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </button>
+          <button class="listen-jump-button" id="listen-jump" type="button">定位这一词</button>
+        </div>
+      </div>
+    </aside>
+
     <div class="detail-modal" id="detail-modal" hidden>
       <div class="detail-backdrop" data-close-detail></div>
       <section class="detail-panel" role="dialog" aria-modal="true" aria-labelledby="detail-word">
@@ -367,10 +465,79 @@
       </section>
     </div>
 
+    <div class="word-practice-modal" id="word-practice-modal" hidden>
+      <div class="word-practice-backdrop" data-close-practice></div>
+      <section class="word-practice-panel" role="dialog" aria-modal="true" aria-labelledby="word-practice-title">
+        <header class="word-practice-topbar">
+          <div>
+            <p class="mini-label" id="word-practice-title">Listening dictation</p>
+            <p class="word-practice-counter"><span id="practice-index">01</span> / <span id="practice-total">10</span></p>
+          </div>
+          <button class="close-button" id="practice-close" type="button" aria-label="退出单词听写">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="m6 6 12 12M18 6 6 18" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+            </svg>
+          </button>
+        </header>
+        <div class="word-practice-progress" aria-hidden="true"><span id="practice-progress-bar"></span></div>
+
+        <div class="word-practice-stage" id="practice-stage">
+          <div class="practice-meta">
+            <span class="band-badge" id="practice-band"></span>
+            <span class="pos-badge" id="practice-pos"></span>
+            <span id="practice-frequency"></span>
+          </div>
+          <p class="practice-instruction" id="practice-instruction">听发音，写出你听到的单词</p>
+          <button class="practice-speaker" id="practice-play" type="button" aria-label="播放单词发音">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M9.2 6.5v11l9-5.5-9-5.5Z" fill="currentColor" />
+            </svg>
+            <span class="sound-wave" aria-hidden="true"><i></i><i></i><i></i></span>
+          </button>
+          <label class="practice-input-wrap" for="practice-input">
+            <span>Type the word</span>
+            <input id="practice-input" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="输入听到的单词…" />
+          </label>
+          <div class="practice-answer" id="practice-answer" hidden>
+            <p id="practice-answer-word"></p>
+            <p id="practice-answer-meta"></p>
+            <p class="practice-feedback" id="practice-feedback"></p>
+          </div>
+        </div>
+
+        <div class="word-practice-actions" id="practice-actions">
+          <button class="practice-check-button" id="practice-check" type="button">对照答案</button>
+          <div class="practice-ratings" id="practice-ratings" hidden>
+            <button class="practice-rating again" id="practice-again" type="button"><span>还不熟</span><small>继续练习</small></button>
+            <button class="practice-rating known" id="practice-known" type="button"><span>掌握了</span><small>下一词</small></button>
+          </div>
+        </div>
+        <footer class="word-practice-footer">
+          <button id="practice-prev" type="button"><span aria-hidden="true">←</span> 上一词</button>
+          <p><kbd>Space</kbd> 播放 · <kbd>Enter</kbd> 对照 / 下一词</p>
+          <button id="practice-next" type="button">下一词 <span aria-hidden="true">→</span></button>
+        </footer>
+
+        <div class="word-practice-complete" id="practice-complete" hidden>
+          <p class="mini-label">Session complete</p>
+          <h2>这些词，<br /><em>听见了。</em></h2>
+          <p>把声音和拼写连在一起，下一次听见时会更直接。</p>
+          <div class="practice-complete-stats">
+            <div><strong id="complete-total">10</strong><span>本次听写</span></div>
+            <div><strong id="complete-mastered">0</strong><span>标记掌握</span></div>
+          </div>
+          <div class="practice-complete-actions">
+            <button class="primary-button" id="practice-restart" type="button">再来 10 词</button>
+            <button class="secondary-button" id="practice-done" type="button">返回词库</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-    <script src="../data/coca-5000.js?v=20261019-2"></script>
-    <script src="../shared/speech.js?v=20261019-2"></script>
-    <script src="app.js?v=20261019-2"></script>
+    <script src="../data/coca-5000.js?v=20261019-3"></script>
+    <script src="../shared/speech.js?v=20261019-3"></script>
+    <script src="app.js?v=20261019-3"></script>
   </body>
 </html>

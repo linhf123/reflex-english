@@ -27,6 +27,26 @@
     collectionPills: document.getElementById("collection-pills"),
     search: document.getElementById("word-search"),
     sort: document.getElementById("sort-select"),
+    listenAll: document.getElementById("listen-all"),
+    listenDock: document.getElementById("listen-dock"),
+    listenStateLabel: document.getElementById("listen-state-label"),
+    listenPositionHead: document.getElementById("listen-position-head"),
+    listenScene: document.getElementById("listen-scene"),
+    listenWordCount: document.getElementById("listen-word-count"),
+    listenStar: document.getElementById("listen-star"),
+    listenStarLabel: document.getElementById("listen-star-label"),
+    listenMastery: document.getElementById("listen-mastery"),
+    listenMasteryLabel: document.getElementById("listen-mastery-label"),
+    listenEn: document.getElementById("listen-en"),
+    listenZh: document.getElementById("listen-zh"),
+    listenScrubber: document.getElementById("listen-scrubber"),
+    listenToggle: document.getElementById("listen-toggle"),
+    listenMiniToggle: document.getElementById("listen-mini-toggle"),
+    listenPrev: document.getElementById("listen-prev"),
+    listenNext: document.getElementById("listen-next"),
+    listenCollapse: document.getElementById("listen-collapse"),
+    listenClose: document.getElementById("listen-close"),
+    listenJump: document.getElementById("listen-jump"),
     sectionTitle: document.getElementById("section-title"),
     sectionKicker: document.getElementById("section-kicker"),
     resultCount: document.getElementById("result-count"),
@@ -77,6 +97,37 @@
     detailStarLabel: document.getElementById("detail-star-label"),
     detailMastery: document.getElementById("detail-mastery"),
     detailMasteryLabel: document.getElementById("detail-mastery-label"),
+    wordPractice: document.getElementById("word-practice"),
+    practiceModal: document.getElementById("word-practice-modal"),
+    practicePanel: document.querySelector(".word-practice-panel"),
+    practiceClose: document.getElementById("practice-close"),
+    practiceIndex: document.getElementById("practice-index"),
+    practiceTotal: document.getElementById("practice-total"),
+    practiceProgressBar: document.getElementById("practice-progress-bar"),
+    practiceStage: document.getElementById("practice-stage"),
+    practiceBand: document.getElementById("practice-band"),
+    practicePos: document.getElementById("practice-pos"),
+    practiceFrequency: document.getElementById("practice-frequency"),
+    practiceInstruction: document.getElementById("practice-instruction"),
+    practicePlay: document.getElementById("practice-play"),
+    practiceInput: document.getElementById("practice-input"),
+    practiceAnswer: document.getElementById("practice-answer"),
+    practiceAnswerWord: document.getElementById("practice-answer-word"),
+    practiceAnswerMeta: document.getElementById("practice-answer-meta"),
+    practiceFeedback: document.getElementById("practice-feedback"),
+    practiceCheck: document.getElementById("practice-check"),
+    practiceRatings: document.getElementById("practice-ratings"),
+    practiceAgain: document.getElementById("practice-again"),
+    practiceKnown: document.getElementById("practice-known"),
+    practicePrev: document.getElementById("practice-prev"),
+    practiceNext: document.getElementById("practice-next"),
+    practiceActions: document.getElementById("practice-actions"),
+    practiceFooter: document.querySelector(".word-practice-footer"),
+    practiceComplete: document.getElementById("practice-complete"),
+    completeTotal: document.getElementById("complete-total"),
+    completeMastered: document.getElementById("complete-mastered"),
+    practiceRestart: document.getElementById("practice-restart"),
+    practiceDone: document.getElementById("practice-done"),
     resetProgress: document.getElementById("reset-progress"),
     toast: document.getElementById("toast"),
   };
@@ -89,6 +140,8 @@
     sort: "rank",
     visible: PAGE_SIZE,
     detailRank: null,
+    listen: null,
+    practice: null,
   };
 
   let progress = loadProgress();
@@ -174,6 +227,15 @@
       new RegExp(`(${escapeRegExp(term)})`, "gi"),
       "<mark>$1</mark>",
     );
+  }
+
+  function shuffle(items) {
+    const copy = [...items];
+    for (let index = copy.length - 1; index > 0; index -= 1) {
+      const target = Math.floor(Math.random() * (index + 1));
+      [copy[index], copy[target]] = [copy[target], copy[index]];
+    }
+    return copy;
   }
 
   function formatNumber(value, digits = 0) {
@@ -355,6 +417,7 @@
       : "";
     updateHeading(filtered);
     updateProgressUI();
+    syncListeningCardHighlight();
   }
 
   function updateProgressUI() {
@@ -392,6 +455,7 @@
     saveProgress();
     renderWords();
     if (state.detailRank === rank) renderDetailState();
+    if (state.listen) renderListeningDock();
   }
 
   function setMastered(rank, value) {
@@ -405,6 +469,7 @@
     saveProgress();
     renderWords();
     if (state.detailRank === rank) renderDetailState();
+    if (state.listen) renderListeningDock();
     if (!existed && value) showToast("已标记掌握");
     if (existed && !value) showToast("已移回待掌握");
   }
@@ -431,19 +496,25 @@
     document.querySelectorAll(".is-speaking").forEach((button) => button.classList.remove("is-speaking"));
   }
 
-  function speak(textValue, button = null) {
-    if (!("speechSynthesis" in window)) {
-      showToast("当前浏览器不支持语音朗读");
-      return;
-    }
-    window.speechSynthesis.cancel();
-    clearSpeakingState();
+  function createUtterance(textValue) {
     const utterance = new SpeechSynthesisUtterance(textValue);
     utterance.lang = progress.voiceLang;
     utterance.rate = progress.rate;
     utterance.pitch = 1;
     const voice = findVoice(progress.voiceLang);
     if (voice) utterance.voice = voice;
+    return utterance;
+  }
+
+  function speak(textValue, button = null) {
+    if (!("speechSynthesis" in window)) {
+      showToast("当前浏览器不支持语音朗读");
+      return;
+    }
+    if (state.listen) stopListening();
+    window.speechSynthesis.cancel();
+    clearSpeakingState();
+    const utterance = createUtterance(textValue);
     if (button) {
       speakingButton = button;
       button.classList.add("is-speaking");
@@ -451,6 +522,283 @@
     utterance.onend = clearSpeakingState;
     utterance.onerror = clearSpeakingState;
     window.speechSynthesis.speak(utterance);
+  }
+
+  function startListening() {
+    if (!("speechSynthesis" in window)) {
+      showToast("当前浏览器不支持连续朗读");
+      return;
+    }
+    if (state.listen) {
+      elements.listenDock.hidden = false;
+      if (!state.listen.playing) toggleListening();
+      return;
+    }
+    if (state.practice) closePractice();
+    window.speechSynthesis.cancel();
+    clearSpeakingState();
+    state.listen = {
+      queue: words.map((word) => word.rank),
+      index: 0,
+      playing: true,
+      finished: false,
+      collapsed: false,
+      scrubbing: false,
+      scrubResume: false,
+      utterance: null,
+      timer: 0,
+    };
+    elements.listenDock.hidden = false;
+    playListeningWord();
+  }
+
+  function renderListeningDock() {
+    const listen = state.listen;
+    if (!listen) return;
+    const word = wordByRank.get(listen.queue[listen.index]);
+    if (!word) return;
+    const band = getBand(word.rank);
+    const color = getBandColor(word.rank);
+    const total = listen.queue.length;
+    const position = `${String(word.rank).padStart(4, "0")} / ${total}`;
+    const starred = progress.starred.includes(word.rank);
+    const mastered = progress.mastered.includes(word.rank);
+
+    elements.listenDock.classList.toggle("is-playing", listen.playing && !listen.finished);
+    elements.listenDock.classList.toggle("is-collapsed", listen.collapsed);
+    elements.listenStateLabel.textContent = listen.scrubbing
+      ? "正在定位"
+      : listen.finished
+        ? "全部听完"
+        : listen.playing
+          ? "正在播放"
+          : "已暂停";
+    elements.listenPositionHead.textContent = position;
+    elements.listenScene.textContent = band.zh;
+    elements.listenScene.style.setProperty("--band-color", color);
+    elements.listenWordCount.textContent = `${posName(word.pos)} · 排名 #${word.rank}`;
+    elements.listenStar.classList.toggle("is-active", starred);
+    elements.listenStar.setAttribute("aria-pressed", String(starred));
+    elements.listenStarLabel.textContent = starred ? "已收藏" : "收藏";
+    elements.listenMastery.classList.toggle("is-active", mastered);
+    elements.listenMastery.setAttribute("aria-pressed", String(mastered));
+    elements.listenMasteryLabel.textContent = mastered ? "已掌握" : "标记掌握";
+    elements.listenEn.textContent = word.word;
+    elements.listenZh.textContent =
+      `${registerName(word.topRegister)}最常出现 · ${formatNumber(word.perMillion, 1)} / 百万词 · 离散度 ${word.dispersion === null ? "—" : word.dispersion.toFixed(2)}`;
+    const progressPercent = ((listen.index + 1) / total) * 100;
+    elements.listenScrubber.max = String(total);
+    elements.listenScrubber.value = String(listen.index + 1);
+    elements.listenScrubber.style.setProperty("--listen-progress", `${progressPercent}%`);
+    elements.listenScrubber.setAttribute(
+      "aria-valuetext",
+      `第 ${word.rank} 名，${word.word}，${posName(word.pos)}`,
+    );
+    elements.listenToggle.setAttribute(
+      "aria-label",
+      listen.playing ? "暂停连续播放" : "继续连续播放",
+    );
+    elements.listenMiniToggle.setAttribute(
+      "aria-label",
+      listen.playing ? "暂停连续播放" : "继续连续播放",
+    );
+    elements.listenCollapse.setAttribute("aria-expanded", String(!listen.collapsed));
+    syncListeningCardHighlight();
+  }
+
+  function syncListeningCardHighlight() {
+    document.querySelectorAll(".word-card.is-now-playing").forEach((card) => {
+      card.classList.remove("is-now-playing");
+    });
+    const listen = state.listen;
+    if (!listen) return;
+    const word = wordByRank.get(listen.queue[listen.index]);
+    document.querySelector(`.word-card[data-rank="${word?.rank}"]`)?.classList.add("is-now-playing");
+  }
+
+  function playListeningWord() {
+    const listen = state.listen;
+    if (!listen || !listen.playing) return;
+    listen.scrubbing = false;
+    const word = wordByRank.get(listen.queue[listen.index]);
+    if (!word) return;
+    window.clearTimeout(listen.timer);
+    listen.utterance = null;
+    window.speechSynthesis.cancel();
+    clearSpeakingState();
+    const utterance = createUtterance(word.word);
+    listen.utterance = utterance;
+
+    utterance.onend = () => {
+      if (state.listen !== listen || listen.utterance !== utterance) return;
+      listen.utterance = null;
+      if (!listen.playing) return;
+      listen.timer = window.setTimeout(() => {
+        if (state.listen !== listen || !listen.playing || listen.utterance) return;
+        if (listen.index >= listen.queue.length - 1) {
+          finishListening();
+          return;
+        }
+        listen.index += 1;
+        renderListeningDock();
+        playListeningWord();
+      }, 650);
+    };
+
+    utterance.onerror = (event) => {
+      if (state.listen !== listen || listen.utterance !== utterance) return;
+      if (event.error === "canceled" || event.error === "interrupted") return;
+      listen.utterance = null;
+      listen.playing = false;
+      renderListeningDock();
+      showToast("连续朗读中断了，请点播放继续");
+    };
+
+    renderListeningDock();
+    window.speechSynthesis.speak(utterance);
+  }
+
+  function pauseListening() {
+    const listen = state.listen;
+    if (!listen) return;
+    listen.playing = false;
+    listen.finished = false;
+    listen.scrubbing = false;
+    listen.utterance = null;
+    window.clearTimeout(listen.timer);
+    window.speechSynthesis.cancel();
+    clearSpeakingState();
+    renderListeningDock();
+  }
+
+  function resumeListening() {
+    const listen = state.listen;
+    if (!listen) return;
+    if (listen.finished) listen.index = 0;
+    listen.finished = false;
+    listen.scrubbing = false;
+    listen.playing = true;
+    playListeningWord();
+  }
+
+  function toggleListening() {
+    const listen = state.listen;
+    if (!listen) return;
+    if (listen.playing) pauseListening();
+    else resumeListening();
+  }
+
+  function moveListening(direction) {
+    const listen = state.listen;
+    if (!listen) return;
+    const nextIndex = listen.index + direction;
+    if (nextIndex < 0) return;
+    listen.utterance = null;
+    window.clearTimeout(listen.timer);
+    window.speechSynthesis.cancel();
+    clearSpeakingState();
+    if (nextIndex >= listen.queue.length) {
+      finishListening();
+      return;
+    }
+    listen.index = nextIndex;
+    listen.finished = false;
+    listen.scrubbing = false;
+    listen.playing = true;
+    playListeningWord();
+  }
+
+  function finishListening() {
+    const listen = state.listen;
+    if (!listen) return;
+    listen.playing = false;
+    listen.finished = true;
+    listen.scrubbing = false;
+    listen.utterance = null;
+    window.clearTimeout(listen.timer);
+    window.speechSynthesis.cancel();
+    clearSpeakingState();
+    renderListeningDock();
+  }
+
+  function stopListening() {
+    const listen = state.listen;
+    if (!listen) return;
+    window.clearTimeout(listen.timer);
+    listen.utterance = null;
+    state.listen = null;
+    window.speechSynthesis.cancel();
+    clearSpeakingState();
+    elements.listenDock.hidden = true;
+    syncListeningCardHighlight();
+  }
+
+  function toggleListeningCollapsed() {
+    const listen = state.listen;
+    if (!listen) return;
+    listen.collapsed = !listen.collapsed;
+    renderListeningDock();
+  }
+
+  function beginListeningScrub() {
+    const listen = state.listen;
+    if (!listen || listen.scrubbing) return;
+    listen.scrubbing = true;
+    listen.scrubResume = listen.playing && !listen.finished;
+    listen.playing = false;
+    listen.utterance = null;
+    window.clearTimeout(listen.timer);
+    window.speechSynthesis.cancel();
+    clearSpeakingState();
+  }
+
+  function previewListeningScrub(value) {
+    const listen = state.listen;
+    if (!listen) return;
+    beginListeningScrub();
+    listen.index = Math.max(0, Math.min(listen.queue.length - 1, Number(value) - 1));
+    listen.finished = false;
+    renderListeningDock();
+  }
+
+  function commitListeningScrub() {
+    const listen = state.listen;
+    if (!listen || !listen.scrubbing) return;
+    const shouldResume = listen.scrubResume;
+    listen.scrubbing = false;
+    listen.scrubResume = false;
+    listen.playing = shouldResume;
+    if (shouldResume) playListeningWord();
+    else renderListeningDock();
+  }
+
+  function jumpToListeningWord() {
+    const listen = state.listen;
+    if (!listen) return;
+    const word = wordByRank.get(listen.queue[listen.index]);
+    if (!word) return;
+    state.band = "all";
+    state.pos = "all";
+    state.collection = "all";
+    state.query = word.word;
+    state.visible = PAGE_SIZE;
+    elements.search.value = word.word;
+    document.querySelectorAll(".band-pill").forEach((button) => {
+      button.classList.toggle("active", button.dataset.band === "all");
+    });
+    document.querySelectorAll(".pos-pill").forEach((button) => {
+      button.classList.toggle("active", button.dataset.pos === "all");
+    });
+    document.querySelectorAll(".collection-pill").forEach((button) => {
+      button.classList.toggle("active", button.dataset.collection === "all");
+    });
+    renderWords();
+    window.setTimeout(() => {
+      document.querySelector(`.word-card[data-rank="${word.rank}"]`)?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }, 40);
   }
 
   function updateVoiceButton() {
@@ -612,7 +960,7 @@
     renderRegisterChart(word);
     renderDetailState();
     elements.detailModal.hidden = false;
-    document.body.style.overflow = "hidden";
+    syncBodyLock();
     window.setTimeout(() => elements.detailClose.focus(), 20);
     loadDefinition(word, token);
   }
@@ -622,7 +970,187 @@
     elements.detailModal.hidden = true;
     state.detailRank = null;
     definitionToken += 1;
-    document.body.style.overflow = "";
+    syncBodyLock();
+    lastFocusedElement?.focus?.();
+  }
+
+  function syncBodyLock() {
+    document.body.style.overflow =
+      !elements.detailModal.hidden || !elements.practiceModal.hidden ? "hidden" : "";
+  }
+
+  function makePracticeQueue() {
+    let pool = getFilteredWords().map((word) => word.rank);
+    if (!pool.length) pool = words.map((word) => word.rank);
+    const mastered = new Set(progress.mastered);
+    const unmastered = shuffle(pool.filter((rank) => !mastered.has(rank)));
+    const learned = shuffle(pool.filter((rank) => mastered.has(rank)));
+    return [...unmastered, ...learned].slice(0, Math.min(10, pool.length));
+  }
+
+  function openPractice() {
+    if (state.listen) stopListening();
+    if (!elements.detailModal.hidden) closeDetail();
+    const queue = makePracticeQueue();
+    if (!queue.length) {
+      showToast("当前筛选下没有可练习的单词");
+      return;
+    }
+    lastFocusedElement = document.activeElement;
+    state.practice = {
+      queue,
+      index: 0,
+      checked: false,
+      feedback: null,
+      finished: false,
+      sessionMastered: 0,
+    };
+    elements.practiceInput.value = "";
+    elements.practiceModal.hidden = false;
+    syncBodyLock();
+    renderPractice();
+    window.setTimeout(() => elements.practiceClose.focus(), 20);
+  }
+
+  function renderPractice() {
+    const practice = state.practice;
+    if (!practice) return;
+    if (practice.finished) {
+      renderPracticeComplete();
+      return;
+    }
+    const word = wordByRank.get(practice.queue[practice.index]);
+    if (!word) return;
+    const band = getBand(word.rank);
+    const total = practice.queue.length;
+
+    elements.practiceStage.hidden = false;
+    elements.practiceActions.hidden = false;
+    elements.practiceFooter.hidden = false;
+    elements.practiceComplete.hidden = true;
+    elements.practiceIndex.textContent = String(practice.index + 1).padStart(2, "0");
+    elements.practiceTotal.textContent = String(total).padStart(2, "0");
+    elements.practiceProgressBar.style.width = `${((practice.index + 1) / total) * 100}%`;
+    elements.practiceBand.textContent = band.zh;
+    elements.practiceBand.style.setProperty("--band-color", getBandColor(word.rank));
+    elements.practicePos.textContent = posName(word.pos);
+    elements.practiceFrequency.textContent = `${formatNumber(word.perMillion, 1)} / 百万词`;
+    elements.practicePlay.dataset.rank = String(word.rank);
+    elements.practiceAnswer.hidden = !practice.checked;
+    elements.practiceRatings.hidden = !practice.checked;
+    elements.practiceCheck.hidden = practice.checked;
+    elements.practiceInput.disabled = practice.checked;
+    elements.practiceInstruction.textContent = practice.checked
+      ? "对照原词，再听一遍确认发音"
+      : "听发音，写出你听到的单词";
+
+    if (practice.checked) {
+      elements.practiceAnswerWord.textContent = word.word;
+      elements.practiceAnswerMeta.textContent =
+        `${posName(word.pos)} · #${word.rank} · ${formatNumber(word.perMillion, 1)} / 百万词`;
+      elements.practiceFeedback.textContent = practice.feedback.text;
+      elements.practiceFeedback.className = `practice-feedback ${practice.feedback.level || ""}`.trim();
+    }
+  }
+
+  function resetPracticeCard(options = {}) {
+    const practice = state.practice;
+    if (!practice) return;
+    practice.checked = false;
+    practice.feedback = null;
+    elements.practiceInput.value = "";
+    elements.practiceInput.disabled = false;
+    elements.practiceFeedback.textContent = "";
+    elements.practiceFeedback.className = "practice-feedback";
+    renderPractice();
+    if (options.focus) {
+      window.setTimeout(() => elements.practiceInput.focus(), 40);
+    }
+  }
+
+  function editDistance(left, right) {
+    const a = left.toLowerCase();
+    const b = right.toLowerCase();
+    const rows = a.length + 1;
+    const cols = b.length + 1;
+    const matrix = Array.from({ length: rows }, () => new Uint16Array(cols));
+    for (let row = 0; row < rows; row += 1) matrix[row][0] = row;
+    for (let col = 0; col < cols; col += 1) matrix[0][col] = col;
+    for (let row = 1; row < rows; row += 1) {
+      for (let col = 1; col < cols; col += 1) {
+        const cost = a[row - 1] === b[col - 1] ? 0 : 1;
+        matrix[row][col] = Math.min(
+          matrix[row - 1][col] + 1,
+          matrix[row][col - 1] + 1,
+          matrix[row - 1][col - 1] + cost,
+        );
+      }
+    }
+    return matrix[rows - 1][cols - 1];
+  }
+
+  function checkPractice() {
+    const practice = state.practice;
+    if (!practice || practice.finished || practice.checked) return;
+    const word = wordByRank.get(practice.queue[practice.index]);
+    const typed = elements.practiceInput.value.trim();
+    if (!typed) {
+      elements.practiceInput.focus();
+      showToast("先听一遍，再写下你听到的单词");
+      return;
+    }
+    const distance = editDistance(typed, word.word);
+    if (distance === 0) {
+      practice.feedback = { text: "完全正确，声音和拼写已经连上了。", level: "" };
+    } else if (distance <= (word.word.length >= 8 ? 2 : 1)) {
+      practice.feedback = { text: "很接近了，注意漏掉或拼错的字母。", level: "is-close" };
+    } else {
+      practice.feedback = { text: "再听一遍，留意单词的开头和结尾。", level: "is-off" };
+    }
+    practice.checked = true;
+    renderPractice();
+  }
+
+  function movePractice(direction) {
+    const practice = state.practice;
+    if (!practice || practice.finished) return;
+    const nextIndex = practice.index + direction;
+    if (nextIndex >= practice.queue.length) {
+      finishPractice();
+      return;
+    }
+    if (nextIndex < 0) return;
+    practice.index = nextIndex;
+    resetPracticeCard();
+  }
+
+  function finishPractice() {
+    const practice = state.practice;
+    if (!practice) return;
+    practice.finished = true;
+    renderPracticeComplete();
+  }
+
+  function renderPracticeComplete() {
+    const practice = state.practice;
+    if (!practice) return;
+    elements.practiceStage.hidden = true;
+    elements.practiceActions.hidden = true;
+    elements.practiceFooter.hidden = true;
+    elements.practiceComplete.hidden = false;
+    elements.completeTotal.textContent = String(practice.queue.length);
+    elements.completeMastered.textContent = String(practice.sessionMastered);
+    elements.practiceIndex.textContent = String(practice.queue.length).padStart(2, "0");
+    window.setTimeout(() => elements.practiceRestart.focus(), 30);
+  }
+
+  function closePractice() {
+    if (elements.practiceModal.hidden) return;
+    window.speechSynthesis.cancel();
+    clearSpeakingState();
+    elements.practiceModal.hidden = true;
+    state.practice = null;
+    syncBodyLock();
     lastFocusedElement?.focus?.();
   }
 
@@ -690,6 +1218,70 @@
       resetVisibleAndRender();
     });
 
+    elements.listenAll.addEventListener("click", startListening);
+    elements.listenToggle.addEventListener("click", toggleListening);
+    elements.listenMiniToggle.addEventListener("click", toggleListening);
+    elements.listenPrev.addEventListener("click", () => moveListening(-1));
+    elements.listenNext.addEventListener("click", () => moveListening(1));
+    elements.listenScrubber.addEventListener("input", (event) => {
+      previewListeningScrub(event.target.value);
+    });
+    elements.listenScrubber.addEventListener("change", commitListeningScrub);
+    elements.listenCollapse.addEventListener("click", toggleListeningCollapsed);
+    elements.listenClose.addEventListener("click", stopListening);
+    elements.listenJump.addEventListener("click", jumpToListeningWord);
+    elements.listenStar.addEventListener("click", () => {
+      const listen = state.listen;
+      if (listen) toggleStar(listen.queue[listen.index]);
+    });
+    elements.listenMastery.addEventListener("click", () => {
+      const listen = state.listen;
+      if (listen) {
+        const rank = listen.queue[listen.index];
+        setMastered(rank, !progress.mastered.includes(rank));
+      }
+    });
+
+    elements.wordPractice.addEventListener("click", openPractice);
+    elements.practiceClose.addEventListener("click", closePractice);
+    elements.practiceModal
+      .querySelector("[data-close-practice]")
+      .addEventListener("click", closePractice);
+    elements.practicePlay.addEventListener("click", () => {
+      const practice = state.practice;
+      if (!practice) return;
+      const word = wordByRank.get(practice.queue[practice.index]);
+      if (word) speak(word.word, elements.practicePlay);
+    });
+    elements.practiceCheck.addEventListener("click", checkPractice);
+    elements.practiceInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        if (state.practice && !state.practice.checked) checkPractice();
+        else movePractice(1);
+      }
+    });
+    elements.practicePrev.addEventListener("click", () => movePractice(-1));
+    elements.practiceNext.addEventListener("click", () => movePractice(1));
+    elements.practiceAgain.addEventListener("click", () => {
+      const practice = state.practice;
+      if (!practice) return;
+      setMastered(practice.queue[practice.index], false);
+      movePractice(1);
+    });
+    elements.practiceKnown.addEventListener("click", () => {
+      const practice = state.practice;
+      if (!practice) return;
+      const rank = practice.queue[practice.index];
+      if (!progress.mastered.includes(rank)) {
+        setMastered(rank, true);
+        practice.sessionMastered += 1;
+      }
+      movePractice(1);
+    });
+    elements.practiceRestart.addEventListener("click", openPractice);
+    elements.practiceDone.addEventListener("click", closePractice);
+
     elements.grid.addEventListener("click", (event) => {
       const card = event.target.closest(".word-card");
       const actionButton = event.target.closest("[data-action]");
@@ -726,6 +1318,7 @@
       progress.voiceLang = progress.voiceLang === "en-US" ? "en-GB" : "en-US";
       saveProgress();
       updateVoiceButton();
+      if (state.listen?.playing) playListeningWord();
       const voiceName = findVoice(progress.voiceLang)?.name.split(" (")[0] || "系统默认";
       showToast(
         `已切换为${progress.voiceLang === "en-US" ? "美式" : "英式"} · ${voiceName}`,
@@ -737,6 +1330,7 @@
       progress.rate = RATE_STEPS[(index + 1) % RATE_STEPS.length];
       saveProgress();
       updateRateButton();
+      if (state.listen?.playing) playListeningWord();
       showToast(`朗读语速 ${progress.rate} 倍`);
     });
 
@@ -790,6 +1384,35 @@
     });
 
     document.addEventListener("keydown", (event) => {
+      if (!elements.practiceModal.hidden) {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          closePractice();
+          return;
+        }
+        const target = event.target;
+        const inInput = target instanceof HTMLInputElement;
+        if (event.key === " " && !inInput && !(target instanceof HTMLButtonElement)) {
+          event.preventDefault();
+          elements.practicePlay.click();
+        }
+        if (event.key === "Enter" && !inInput) {
+          if (target instanceof HTMLButtonElement) return;
+          event.preventDefault();
+          if (state.practice?.checked) movePractice(1);
+          else checkPractice();
+        }
+        if (event.key === "ArrowRight" && !inInput) {
+          event.preventDefault();
+          movePractice(1);
+        }
+        if (event.key === "ArrowLeft" && !inInput) {
+          event.preventDefault();
+          movePractice(-1);
+        }
+        return;
+      }
+
       if (!elements.detailModal.hidden) {
         if (event.key === "Escape") {
           event.preventDefault();
