@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="1000 句英语母语反射训练。听、想、说，在真实的句子里建立英语反射。"
+    />
+    <meta name="theme-color" content="#f7f1e6" />
+    <meta name="apple-mobile-web-app-title" content="Reflex English" />
+    <title>Reflex English · 1000 句英语反射训练</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Inter:wght@400;500;600;700&family=Noto+Serif+SC:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <script>
+      (() => {
+        try {
+          const saved = localStorage.getItem("reflex-theme");
+          const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+          document.documentElement.dataset.theme = saved || (prefersDark ? "dark" : "light");
+        } catch {
+          document.documentElement.dataset.theme = "light";
+        }
+      })();
+    </script>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#library">跳到句子库</a>
+
+    <header class="hero" id="top">
+      <div class="hero-orb hero-orb-one" aria-hidden="true"></div>
+      <div class="hero-orb hero-orb-two" aria-hidden="true"></div>
+
+      <nav class="topbar" aria-label="主导航">
+        <a class="brand" href="#top" aria-label="Reflex English 首页">
+          <span class="brand-mark" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </span>
+          <span class="brand-word">Reflex</span>
+          <span class="brand-cn">反射英语</span>
+        </a>
+        <div class="topbar-links">
+          <a href="#library">句子库</a>
+          <a href="#method">怎么练</a>
+          <button class="text-button" id="about-button" type="button">练习说明</button>
+        </div>
+      </nav>
+
+      <div class="hero-layout">
+        <div class="hero-copy">
+          <p class="eyebrow reveal-up" style="--delay: 0.04s">
+            <span>1000 sentences</span>
+            <span class="eyebrow-dot"></span>
+            <span>listen · think · speak</span>
+          </p>
+          <h1 class="reveal-up" style="--delay: 0.1s">
+            Speak before<br />
+            you <em>translate.</em>
+          </h1>
+          <p class="hero-subtitle reveal-up" style="--delay: 0.16s">
+            1000 句英语母语反射训练。先让耳朵熟悉声音，再让嘴巴替大脑作答。
+          </p>
+          <div class="hero-actions reveal-up" style="--delay: 0.22s">
+            <button class="primary-button" id="start-practice" type="button">
+              <span class="primary-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M8 5.2v13.6L19 12 8 5.2Z" fill="currentColor" />
+                </svg>
+              </span>
+              开始今日 10 句
+            </button>
+            <button class="secondary-button" id="browse-all" type="button">
+              浏览全部句子
+              <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path d="M4 10h12M11 5l5 5-5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </button>
+          </div>
+          <div class="hero-note reveal-up" style="--delay: 0.28s">
+            <span class="note-line"></span>
+            <span>不需要登录 · 进度只保存在你的浏览器里</span>
+          </div>
+        </div>
+
+        <aside class="today-card reveal-up" style="--delay: 0.18s" aria-label="今日一句">
+          <div class="today-card-head">
+            <div>
+              <p class="mini-label">Today’s sentence</p>
+              <p class="today-date" id="today-date"></p>
+            </div>
+            <div class="today-number" id="today-number">001</div>
+          </div>
+          <div class="today-quote-mark" aria-hidden="true">“</div>
+          <p class="today-en" id="today-en">Hi.</p>
+          <p class="today-zh" id="today-zh">你好。</p>
+          <div class="today-card-foot">
+            <button class="round-play" id="today-play" type="button" aria-label="播放今日一句">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M9.2 6.5v11l9-5.5-9-5.5Z" fill="currentColor" />
+              </svg>
+              <span class="sound-wave" aria-hidden="true"><i></i><i></i><i></i></span>
+            </button>
+            <button class="today-practice" id="today-practice" type="button">
+              练习这一句
+              <span aria-hidden="true">↗</span>
+            </button>
+          </div>
+          <div class="today-accent" aria-hidden="true"></div>
+        </aside>
+      </div>
+
+      <div class="hero-stats reveal-up" style="--delay: 0.34s" aria-label="学习统计">
+        <div class="stat">
+          <span class="stat-value">1000</span>
+          <span class="stat-label">实用句子</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat">
+          <span class="stat-value">10</span>
+          <span class="stat-label">生活场景</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat">
+          <span class="stat-value" id="mastered-stat">0</span>
+          <span class="stat-label">已经掌握</span>
+        </div>
+        <div class="progress-stat">
+          <div class="progress-track" aria-hidden="true"><span id="hero-progress-bar"></span></div>
+          <span id="hero-progress-text">还差 1000 句，开始第一句吧</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="library-nav" id="library-nav">
+      <div class="nav-inner">
+        <label class="search-box" for="search-input">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle cx="10.7" cy="10.7" r="6.7" stroke="currentColor" stroke-width="1.7" />
+            <path d="m16 16 4.2 4.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+          </svg>
+          <input
+            id="search-input"
+            type="search"
+            placeholder="搜索英文或中文…"
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <kbd>⌘ K</kbd>
+        </label>
+
+        <div class="scene-pills" id="scene-pills" role="group" aria-label="按场景筛选"></div>
+
+        <div class="nav-controls">
+          <div class="collection-pills" id="collection-pills" role="group" aria-label="按学习状态筛选">
+            <button class="collection-pill active" type="button" data-collection="all">全部</button>
+            <button class="collection-pill" type="button" data-collection="learning">待掌握</button>
+            <button class="collection-pill" type="button" data-collection="mastered">已掌握</button>
+            <button class="collection-pill" type="button" data-collection="starred">收藏</button>
+          </div>
+          <div class="nav-tools">
+            <button class="tool-button voice-button" id="voice-button" type="button" aria-label="切换英式或美式发音">
+              <span class="tool-icon" aria-hidden="true">US</span>
+              <span id="voice-label">美音</span>
+            </button>
+            <button class="tool-button" id="rate-button" type="button" aria-label="切换语速">
+              <span class="tool-icon" aria-hidden="true">×</span>
+              <span id="rate-label">0.9</span>
+            </button>
+            <button class="tool-button" id="theme-button" type="button" aria-label="切换深色模式">
+              <span class="theme-icon" aria-hidden="true"></span>
+              <span class="tool-label">主题</span>
+            </button>
+            <button class="nav-practice-button" id="nav-practice" type="button">
+              <span class="nav-practice-dot" aria-hidden="true"></span>
+              卡片练习
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <main>
+      <section class="library" id="library">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker" id="section-kicker">The complete library</p>
+            <h2 id="section-title">全部句子</h2>
+          </div>
+          <div class="section-heading-right">
+            <p id="result-count">1000 句</p>
+            <button class="shuffle-button" id="shuffle-button" type="button" title="随机看一句">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M4 7h3.2c4.5 0 5.1 10 9.6 10H20M17 14l3 3-3 3M4 17h3.2c1.5 0 2.6-1.1 3.6-2.7M15.2 8.8C16 7.7 17 7 18 7h2M17 4l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              随机一句
+            </button>
+          </div>
+        </div>
+
+        <div class="scene-intro" id="scene-intro" hidden>
+          <span class="scene-intro-line" aria-hidden="true"></span>
+          <p id="scene-intro-text"></p>
+        </div>
+
+        <div class="sentence-grid" id="sentence-grid" aria-live="polite"></div>
+
+        <div class="empty-state" id="empty-state" hidden>
+          <div class="empty-glyph" aria-hidden="true">Aa</div>
+          <h3>这里还没有句子</h3>
+          <p>换一个关键词或筛选条件试试。</p>
+          <button class="secondary-button" id="reset-filters" type="button">清除筛选</button>
+        </div>
+
+        <div class="load-more-wrap" id="load-more-wrap">
+          <button class="load-more-button" id="load-more" type="button">
+            <span>继续浏览</span>
+            <span class="load-count" id="load-count"></span>
+          </button>
+        </div>
+      </section>
+
+      <section class="method" id="method">
+        <div class="method-heading">
+          <p class="section-kicker">The reflex loop</p>
+          <h2>一句，练三遍。</h2>
+          <p>听懂意思，不翻译每个词。让整句话慢慢变成一种条件反射。</p>
+        </div>
+        <div class="method-grid">
+          <article class="method-card">
+            <span class="method-number">01</span>
+            <div class="method-icon listen-icon" aria-hidden="true">
+              <span></span><span></span><span></span><span></span><span></span>
+            </div>
+            <h3>Listen</h3>
+            <p class="method-cn">先听声音</p>
+            <p>不看文字，先抓住句子的节奏、重音和语气。</p>
+          </article>
+          <article class="method-card">
+            <span class="method-number">02</span>
+            <div class="method-icon recall-icon" aria-hidden="true">?</div>
+            <h3>Recall</h3>
+            <p class="method-cn">看中文，先开口</p>
+            <p>给自己两秒钟，用英语把意思说出来，不要求完美。</p>
+          </article>
+          <article class="method-card">
+            <span class="method-number">03</span>
+            <div class="method-icon repeat-icon" aria-hidden="true">↻</div>
+            <h3>Repeat</h3>
+            <p class="method-cn">揭晓，再跟读</p>
+            <p>对照原句，模仿语音语调。隔天再见一次，就更自然。</p>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-brand">
+        <span class="brand-word">Reflex</span>
+        <span>把英语练成反射，而不是知识。</span>
+      </div>
+      <div class="footer-meta">
+        <span>1000 句中英双语素材</span>
+        <span class="footer-dot"></span>
+        <span>输入与进度保存在本地</span>
+      </div>
+    </footer>
+
+    <div class="practice-modal" id="practice-modal" hidden>
+      <div class="practice-backdrop" data-close-practice></div>
+      <section
+        class="practice-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="practice-title"
+      >
+        <header class="practice-topbar">
+          <div class="practice-title-wrap">
+            <p class="mini-label" id="practice-title">Reflection practice</p>
+            <p class="practice-counter"><span id="practice-index">01</span> / <span id="practice-total">10</span></p>
+          </div>
+          <div class="mode-switch" role="group" aria-label="练习模式">
+            <button class="mode-button active" type="button" data-mode="recall">中文回想</button>
+            <button class="mode-button" type="button" data-mode="dictation">听写</button>
+          </div>
+          <button class="close-button" type="button" data-close-practice aria-label="退出练习">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="m6 6 12 12M18 6 6 18" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+            </svg>
+          </button>
+        </header>
+        <div class="practice-progress" aria-hidden="true"><span id="practice-progress-bar"></span></div>
+
+        <div class="practice-stage" id="practice-stage">
+          <div class="practice-card-meta">
+            <span class="scene-badge" id="practice-scene"></span>
+            <span id="practice-word-count"></span>
+            <span class="practice-mastery-dot" id="practice-mastery-dot" hidden>已掌握</span>
+          </div>
+
+          <div class="practice-cue" id="practice-cue">
+            <p class="practice-label" id="practice-cue-label">先想一想，这句话用英语怎么说？</p>
+            <p class="practice-zh" id="practice-zh">你好。</p>
+          </div>
+
+          <div class="dictation-area" id="dictation-area" hidden>
+            <label for="dictation-input">听完后，把你听到的句子写下来</label>
+            <textarea
+              id="dictation-input"
+              rows="3"
+              placeholder="Type what you hear…"
+              autocomplete="off"
+              autocapitalize="sentences"
+              spellcheck="false"
+            ></textarea>
+            <p class="dictation-hint">不必纠结标点。按 Enter 对照答案。</p>
+          </div>
+
+          <div class="practice-answer" id="practice-answer" hidden>
+            <div class="answer-rule" aria-hidden="true"></div>
+            <p class="practice-en" id="practice-en"></p>
+            <p class="practice-answer-zh" id="practice-answer-zh"></p>
+            <p class="answer-feedback" id="answer-feedback" hidden></p>
+          </div>
+
+          <div class="practice-sound" id="practice-sound">
+            <button class="round-play large" id="practice-play" type="button" aria-label="播放当前句子">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M9.2 6.5v11l9-5.5-9-5.5Z" fill="currentColor" />
+              </svg>
+              <span class="sound-wave" aria-hidden="true"><i></i><i></i><i></i></span>
+            </button>
+            <div>
+              <p>Listen closely</p>
+              <span>可以先听三遍，再开口</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="practice-actions" id="practice-actions">
+          <button class="reveal-button" id="reveal-button" type="button">
+            <span class="reveal-label" id="reveal-label">揭晓英文</span>
+            <span aria-hidden="true">↘</span>
+          </button>
+          <div class="rating-actions" id="rating-actions" hidden>
+            <button class="rating-button again-button" id="again-button" type="button">
+              <span>还不熟</span>
+              <small>稍后再见</small>
+            </button>
+            <button class="rating-button known-button" id="known-button" type="button">
+              <span>掌握了</span>
+              <small>进入下一句</small>
+            </button>
+          </div>
+        </div>
+
+        <footer class="practice-footer">
+          <button class="practice-nav-button" id="practice-prev" type="button">
+            <span aria-hidden="true">←</span> 上一句
+          </button>
+          <p><kbd>Space</kbd> 播放 · <kbd>Enter</kbd> 揭晓 / 下一句</p>
+          <button class="practice-nav-button" id="practice-next" type="button">
+            下一句 <span aria-hidden="true">→</span>
+          </button>
+        </footer>
+
+        <div class="practice-complete" id="practice-complete" hidden>
+          <p class="mini-label">Session complete</p>
+          <h2>这几句话，<br /><em>已经开口。</em></h2>
+          <p class="complete-copy">重复不是原地踏步。每一次把中文变成英语，都在缩短大脑里的那条路。</p>
+          <div class="complete-stats">
+            <div><strong id="complete-total">10</strong><span>本次练习</span></div>
+            <div><strong id="complete-mastered">0</strong><span>标记掌握</span></div>
+            <div><strong id="complete-starred">0</strong><span>加入收藏</span></div>
+          </div>
+          <div class="complete-actions">
+            <button class="primary-button" id="practice-again" type="button">再来 10 句</button>
+            <button class="secondary-button" id="practice-done" type="button">返回句子库</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="info-modal" id="info-modal" hidden>
+      <div class="info-backdrop" data-close-info></div>
+      <section class="info-panel" role="dialog" aria-modal="true" aria-labelledby="info-title">
+        <button class="close-button info-close" type="button" data-close-info aria-label="关闭说明">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="m6 6 12 12M18 6 6 18" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+          </svg>
+        </button>
+        <p class="section-kicker">How to use it</p>
+        <h2 id="info-title">不要背，去反应。</h2>
+        <p class="info-lead">这套练习适合每天 10—20 分钟。重点不是一次记住，而是让同一句话在不同时间重新出现。</p>
+        <div class="info-steps">
+          <div><span>1</span><p><strong>听声音</strong> 先捕捉整句的节奏，不急着看中文。</p></div>
+          <div><span>2</span><p><strong>想意思</strong> 看中文提示，尝试直接说出英语。</p></div>
+          <div><span>3</span><p><strong>再跟读</strong> 揭晓原句，模仿重音和语调，连续读三遍。</p></div>
+          <div><span>4</span><p><strong>隔天复习</strong> 在“待掌握”里重新练一遍，让句子真正留下来。</p></div>
+        </div>
+        <div class="info-shortcuts">
+          <span><kbd>⌘ K</kbd> 搜索句子</span>
+          <span><kbd>Space</kbd> 练习中播放</span>
+          <span><kbd>Enter</kbd> 揭晓 / 下一句</span>
+          <span><kbd>Esc</kbd> 退出浮层</span>
+        </div>
+        <div class="info-footer">
+          <button class="primary-button info-start" id="info-start" type="button">从 10 句开始</button>
+          <button class="reset-progress-button" id="reset-progress" type="button">清除本机学习记录</button>
+        </div>
+      </section>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script src="data/sentences.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

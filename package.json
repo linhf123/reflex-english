@@ -1,0 +1,10 @@
+{
+  "name": "reflex-english",
+  "private": true,
+  "version": "1.0.0",
+  "description": "1000 句英语母语反射训练网站",
+  "scripts": {
+    "dev": "node scripts/serve.mjs",
+    "build:data": "node scripts/build-data.mjs"
+  }
+}
