@@ -57,7 +57,7 @@
     listenMasteryLabel: document.getElementById("listen-mastery-label"),
     listenEn: document.getElementById("listen-en"),
     listenZh: document.getElementById("listen-zh"),
-    listenProgressBar: document.getElementById("listen-progress-bar"),
+    listenScrubber: document.getElementById("listen-scrubber"),
     listenToggle: document.getElementById("listen-toggle"),
     listenMiniToggle: document.getElementById("listen-mini-toggle"),
     listenPrev: document.getElementById("listen-prev"),
@@ -590,6 +590,8 @@
       playing: true,
       finished: false,
       collapsed: false,
+      scrubbing: false,
+      scrubResume: false,
       utterance: null,
       timer: 0,
     };
@@ -608,11 +610,13 @@
 
     elements.listenDock.classList.toggle("is-playing", listen.playing && !listen.finished);
     elements.listenDock.classList.toggle("is-collapsed", listen.collapsed);
-    elements.listenStateLabel.textContent = listen.finished
-      ? "全部听完"
-      : listen.playing
-        ? "正在播放"
-        : "已暂停";
+    elements.listenStateLabel.textContent = listen.scrubbing
+      ? "正在定位"
+      : listen.finished
+        ? "全部听完"
+        : listen.playing
+          ? "正在播放"
+          : "已暂停";
     elements.listenPositionHead.textContent = position;
     elements.listenScene.textContent = scene?.zh || "日常表达";
     elements.listenScene.style.setProperty("--scene-color", sceneColor(sentence.scene));
@@ -635,7 +639,15 @@
     elements.listenMasteryLabel.textContent = mastered ? "已掌握" : "标记掌握";
     elements.listenEn.textContent = sentence.en;
     elements.listenZh.textContent = sentence.zh;
-    elements.listenProgressBar.style.width = `${((listen.index + 1) / total) * 100}%`;
+    const progressPercent = ((listen.index + 1) / total) * 100;
+    elements.listenScrubber.max = String(total);
+    elements.listenScrubber.value = String(listen.index + 1);
+    elements.listenScrubber.style.setProperty("--listen-progress", `${progressPercent}%`);
+    elements.listenScrubber.setAttribute(
+      "aria-valuetext",
+      `第 ${sentence.id} 句，${scene?.zh || "日常表达"}，${sentence.en}`,
+    );
+    elements.listenScrubber.title = `第 ${sentence.id} 句 · 拖动跳转`;
     elements.listenToggle.setAttribute("aria-label", listen.playing ? "暂停连续播放" : "继续连续播放");
     elements.listenMiniToggle.setAttribute("aria-label", listen.playing ? "暂停连续播放" : "继续连续播放");
     elements.listenCollapse.setAttribute("aria-expanded", String(!listen.collapsed));
@@ -659,6 +671,7 @@
   function playListeningSentence() {
     const listen = state.listen;
     if (!listen || !listen.playing) return;
+    listen.scrubbing = false;
     const sentence = sentenceMap.get(listen.queue[listen.index]);
     if (!sentence) return;
 
@@ -705,6 +718,7 @@
     if (!listen) return;
     listen.playing = false;
     listen.finished = false;
+    listen.scrubbing = false;
     listen.utterance = null;
     window.clearTimeout(listen.timer);
     window.speechSynthesis.cancel();
@@ -717,6 +731,7 @@
     if (!listen) return;
     if (listen.finished) listen.index = 0;
     listen.finished = false;
+    listen.scrubbing = false;
     listen.playing = true;
     playListeningSentence();
   }
@@ -746,6 +761,7 @@
 
     listen.index = nextIndex;
     listen.finished = false;
+    listen.scrubbing = false;
     listen.playing = true;
     playListeningSentence();
   }
@@ -755,6 +771,7 @@
     if (!listen) return;
     listen.playing = false;
     listen.finished = true;
+    listen.scrubbing = false;
     listen.utterance = null;
     window.clearTimeout(listen.timer);
     window.speechSynthesis.cancel();
@@ -779,6 +796,42 @@
     if (!listen) return;
     listen.collapsed = !listen.collapsed;
     renderListeningDock();
+  }
+
+  function beginListeningScrub() {
+    const listen = state.listen;
+    if (!listen || listen.scrubbing) return;
+    listen.scrubbing = true;
+    listen.scrubResume = listen.playing && !listen.finished;
+    listen.playing = false;
+    listen.utterance = null;
+    window.clearTimeout(listen.timer);
+    window.speechSynthesis.cancel();
+    clearSpeakingState();
+  }
+
+  function previewListeningScrub(value) {
+    const listen = state.listen;
+    if (!listen) return;
+    beginListeningScrub();
+    const index = Math.max(
+      0,
+      Math.min(listen.queue.length - 1, Number(value) - 1),
+    );
+    listen.index = index;
+    listen.finished = false;
+    renderListeningDock();
+  }
+
+  function commitListeningScrub() {
+    const listen = state.listen;
+    if (!listen || !listen.scrubbing) return;
+    const shouldResume = listen.scrubResume;
+    listen.scrubbing = false;
+    listen.scrubResume = false;
+    listen.playing = shouldResume;
+    if (shouldResume) playListeningSentence();
+    else renderListeningDock();
   }
 
   function jumpToListeningSentence() {
@@ -1190,6 +1243,10 @@
     elements.listenMiniToggle.addEventListener("click", toggleListening);
     elements.listenPrev.addEventListener("click", () => moveListening(-1));
     elements.listenNext.addEventListener("click", () => moveListening(1));
+    elements.listenScrubber.addEventListener("input", (event) => {
+      previewListeningScrub(event.target.value);
+    });
+    elements.listenScrubber.addEventListener("change", commitListeningScrub);
     elements.listenCollapse.addEventListener("click", toggleListeningCollapsed);
     elements.listenClose.addEventListener("click", stopListening);
     elements.listenJump.addEventListener("click", jumpToListeningSentence);

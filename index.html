@@ -311,7 +311,17 @@
       </div>
 
       <div class="listen-dock-body">
-        <div class="listen-progress" aria-hidden="true"><span id="listen-progress-bar"></span></div>
+        <div class="listen-progress">
+          <input
+            id="listen-scrubber"
+            type="range"
+            min="1"
+            max="1000"
+            value="1"
+            step="1"
+            aria-label="拖动跳转到指定句子"
+          />
+        </div>
         <div class="listen-meta">
           <span class="scene-badge" id="listen-scene"></span>
           <span id="listen-word-count"></span>
