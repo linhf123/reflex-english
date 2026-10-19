@@ -493,20 +493,7 @@
   }
 
   function findVoice(lang) {
-    const matching = voices.filter((voice) =>
-      voice.lang.toLowerCase().replace("_", "-").startsWith(lang.toLowerCase()),
-    );
-    const preferredNames =
-      lang === "en-GB"
-        ? ["Daniel", "Serena", "Kate", "Google UK English"]
-        : ["Samantha", "Alex", "Ava", "Google US English"];
-
-    for (const preferred of preferredNames) {
-      const match = matching.find((voice) => voice.name.includes(preferred));
-      if (match) return match;
-    }
-
-    return matching.find((voice) => voice.localService) || matching[0] || null;
+    return window.ReflexSpeech?.pickVoice(voices, lang) || null;
   }
 
   function clearSpeakingState() {
@@ -863,9 +850,15 @@
 
   function updateVoiceButton() {
     const us = progress.voiceLang === "en-US";
+    const voice = findVoice(progress.voiceLang);
+    const voiceName = voice?.name || "系统默认语音";
     elements.voiceLabel.textContent = us ? "美音" : "英音";
     elements.voiceButton.querySelector(".tool-icon").textContent = us ? "US" : "UK";
-    elements.voiceButton.setAttribute("aria-label", us ? "当前美式发音，切换为英式" : "当前英式发音，切换为美式");
+    elements.voiceButton.title = `当前音色：${voiceName} · 点击切换美式/英式`;
+    elements.voiceButton.setAttribute(
+      "aria-label",
+      `当前${us ? "美" : "英"}式发音，音色 ${voiceName}，点击切换`,
+    );
   }
 
   function updateRateButton() {
@@ -1213,7 +1206,10 @@
       saveProgress();
       updateVoiceButton();
       if (state.listen?.playing) playListeningSentence();
-      showToast(progress.voiceLang === "en-US" ? "已切换为美式发音" : "已切换为英式发音");
+      const voiceName = findVoice(progress.voiceLang)?.name.split(" (")[0] || "系统默认";
+      showToast(
+        `已切换为${progress.voiceLang === "en-US" ? "美式" : "英式"} · ${voiceName}`,
+      );
     });
 
     elements.rateButton.addEventListener("click", () => {
@@ -1362,7 +1358,11 @@
 
     if ("speechSynthesis" in window) {
       loadVoices();
-      window.speechSynthesis.addEventListener?.("voiceschanged", loadVoices);
+      updateVoiceButton();
+      window.speechSynthesis.addEventListener?.("voiceschanged", () => {
+        loadVoices();
+        updateVoiceButton();
+      });
     }
   }
 
