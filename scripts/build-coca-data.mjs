@@ -4,6 +4,7 @@ import path from "node:path";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const sourcePath = path.join(root, "data", "coca-source.csv");
+const chinesePath = path.join(root, "data", "coca-zh.csv");
 const outputPath = path.join(root, "data", "coca-5000.js");
 
 const bands = [
@@ -84,7 +85,14 @@ function parseCsv(text) {
 }
 
 const source = (await readFile(sourcePath, "utf8")).replace(/^\uFEFF/, "");
+const chineseSource = (await readFile(chinesePath, "utf8")).replace(/^\uFEFF/, "");
 const [header, ...rows] = parseCsv(source);
+const [chineseHeader, ...chineseRows] = parseCsv(chineseSource);
+const chineseWordIndex = chineseHeader.indexOf("word");
+const chineseTranslationIndex = chineseHeader.indexOf("translation");
+const chineseMap = new Map(
+  chineseRows.map((row) => [row[chineseWordIndex].toLowerCase(), row[chineseTranslationIndex]]),
+);
 const columns = Object.fromEntries(header.map((name, index) => [name, index]));
 const selectedRows = rows.slice(0, 5000);
 
@@ -121,6 +129,7 @@ const words = selectedRows.map((row) => {
   return {
     rank,
     word: row[columns.lemma],
+    zh: chineseMap.get(row[columns.lemma].toLowerCase()) || "暂无中文释义",
     pos: row[columns.PoS],
     frequency: number(row, "freq"),
     perMillion: number(row, "perMil", 2),
@@ -143,6 +152,8 @@ const payload = `// Generated from data/coca-source.csv by scripts/build-coca-da
     posLabels,
     source: "https://github.com/brucewlee/COCA-WordFrequency",
     corpus: "https://www.wordfrequency.info/",
+    chineseSource: "https://github.com/skywind3000/ECDICT",
+    chineseLicense: "MIT",
   },
   null,
   2,
@@ -150,4 +161,7 @@ const payload = `// Generated from data/coca-source.csv by scripts/build-coca-da
 
 await writeFile(outputPath, payload, "utf8");
 console.log(`Built ${words.length} COCA entries (${uniqueLemmas} unique lemmas).`);
+console.log(
+  `Chinese meanings: ${words.filter((entry) => entry.zh !== "暂无中文释义").length}/${words.length}.`,
+);
 console.log(`Output: ${(Buffer.byteLength(payload) / 1024).toFixed(0)} KB`);

@@ -377,7 +377,7 @@ html[data-theme="dark"] .coca-hero::after {
 .spotlight-card {
   position: relative;
   overflow: hidden;
-  min-height: 430px;
+  min-height: 468px;
   border: 1px solid var(--line-strong);
   border-radius: 3px 3px 24px 3px;
   background:
@@ -456,6 +456,19 @@ html[data-theme="dark"] .coca-hero::after {
   color: var(--ink-faint);
   font-family: var(--zh-serif);
   font-size: 9.5px;
+}
+
+.spotlight-zh {
+  display: -webkit-box;
+  max-width: 96%;
+  margin-top: 9px;
+  overflow: hidden;
+  color: var(--ink-soft);
+  font-family: var(--zh-serif);
+  font-size: 11px;
+  line-height: 1.62;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .pos-badge,
@@ -1232,6 +1245,19 @@ main {
   color: var(--blue);
 }
 
+.word-zh {
+  display: -webkit-box;
+  min-height: 34px;
+  margin-top: 9px;
+  overflow: hidden;
+  color: var(--ink-soft);
+  font-family: var(--zh-serif);
+  font-size: 11px;
+  line-height: 1.58;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
 .word-subline {
   display: flex;
   align-items: center;
@@ -1247,12 +1273,12 @@ main {
 }
 
 .word-context {
-  min-height: 38px;
-  margin-top: 12px;
-  color: var(--ink-soft);
+  min-height: 27px;
+  margin-top: 7px;
+  color: var(--ink-faint);
   font-family: var(--zh-serif);
-  font-size: 10px;
-  line-height: 1.65;
+  font-size: 8.5px;
+  line-height: 1.6;
 }
 
 .word-context strong {
@@ -2196,6 +2222,15 @@ html[data-theme="dark"] .listen-dock {
   font-size: 10px;
 }
 
+.detail-zh {
+  max-width: 620px;
+  margin-top: 11px;
+  color: var(--ink-soft);
+  font-family: var(--zh-serif);
+  font-size: 14px;
+  line-height: 1.8;
+}
+
 .detail-play-button {
   width: 50px;
   height: 50px;
@@ -2554,6 +2589,18 @@ html[data-theme="dark"] .listen-dock {
   text-align: center;
 }
 
+.practice-zh-hint {
+  position: relative;
+  z-index: 1;
+  max-width: 560px;
+  margin: 9px auto 0;
+  color: var(--ink-soft);
+  font-family: var(--zh-serif);
+  font-size: 12px;
+  line-height: 1.7;
+  text-align: center;
+}
+
 .practice-speaker {
   position: relative;
   z-index: 1;
@@ -2667,6 +2714,15 @@ html[data-theme="dark"] .listen-dock {
   color: var(--ink-faint);
   font-family: var(--zh-serif);
   font-size: 9px;
+}
+
+.practice-answer-zh {
+  max-width: 540px;
+  margin: 8px auto 0;
+  color: var(--ink-soft);
+  font-family: var(--zh-serif);
+  font-size: 10px;
+  line-height: 1.7;
 }
 
 .practice-feedback {
@@ -3131,7 +3187,7 @@ kbd {
   }
 
   .spotlight-card {
-    min-height: 380px;
+    min-height: 444px;
     padding: 24px 24px 22px;
   }
 
@@ -3357,7 +3413,7 @@ kbd {
   }
 
   .word-practice-stage {
-    min-height: 420px;
+    min-height: 448px;
     margin-top: 14px;
     padding: 24px 18px;
   }

@@ -74,6 +74,7 @@
     spotlightWord: document.getElementById("spotlight-word"),
     spotlightPos: document.getElementById("spotlight-pos"),
     spotlightFrequency: document.getElementById("spotlight-frequency"),
+    spotlightZh: document.getElementById("spotlight-zh"),
     spotlightRegister: document.getElementById("spotlight-register"),
     spotlightPlay: document.getElementById("spotlight-play"),
     spotlightOpen: document.getElementById("spotlight-open"),
@@ -85,6 +86,7 @@
     detailWord: document.getElementById("detail-word"),
     detailPos: document.getElementById("detail-pos"),
     detailFrequency: document.getElementById("detail-frequency"),
+    detailZh: document.getElementById("detail-zh"),
     detailPlay: document.getElementById("detail-play"),
     detailPerMillion: document.getElementById("detail-per-million"),
     detailCoverage: document.getElementById("detail-coverage"),
@@ -109,11 +111,13 @@
     practicePos: document.getElementById("practice-pos"),
     practiceFrequency: document.getElementById("practice-frequency"),
     practiceInstruction: document.getElementById("practice-instruction"),
+    practiceZhHint: document.getElementById("practice-zh-hint"),
     practicePlay: document.getElementById("practice-play"),
     practiceInput: document.getElementById("practice-input"),
     practiceAnswer: document.getElementById("practice-answer"),
     practiceAnswerWord: document.getElementById("practice-answer-word"),
     practiceAnswerMeta: document.getElementById("practice-answer-meta"),
+    practiceAnswerZh: document.getElementById("practice-answer-zh"),
     practiceFeedback: document.getElementById("practice-feedback"),
     practiceCheck: document.getElementById("practice-check"),
     practiceRatings: document.getElementById("practice-ratings"),
@@ -288,7 +292,7 @@
       if (state.collection === "mastered" && !mastered.has(word.rank)) return false;
       if (state.collection === "learning" && mastered.has(word.rank)) return false;
       if (state.collection === "starred" && !starred.has(word.rank)) return false;
-      if (query && !word.word.toLowerCase().includes(query)) return false;
+      if (query && !`${word.word} ${word.zh}`.toLowerCase().includes(query)) return false;
       return true;
     });
 
@@ -341,6 +345,7 @@
             <span class="pos-badge">${escapeHTML(posName(word.pos))}</span>
             <span>${formatNumber(word.perMillion, word.perMillion < 100 ? 1 : 0)} / 百万词</span>
           </div>
+          <p class="word-zh" lang="zh-CN">${highlight(word.zh, state.query)}</p>
           <p class="word-context">
             <strong>${escapeHTML(registerName(word.topRegister))}</strong> 最常出现
             · 离散度 ${dispersion} · 覆盖 ${word.coverage.toFixed(1)}%
@@ -576,7 +581,8 @@
     elements.listenPositionHead.textContent = position;
     elements.listenScene.textContent = band.zh;
     elements.listenScene.style.setProperty("--band-color", color);
-    elements.listenWordCount.textContent = `${posName(word.pos)} · 排名 #${word.rank}`;
+    elements.listenWordCount.textContent =
+      `${posName(word.pos)} · ${formatNumber(word.perMillion, 1)} / 百万词`;
     elements.listenStar.classList.toggle("is-active", starred);
     elements.listenStar.setAttribute("aria-pressed", String(starred));
     elements.listenStarLabel.textContent = starred ? "已收藏" : "收藏";
@@ -584,8 +590,7 @@
     elements.listenMastery.setAttribute("aria-pressed", String(mastered));
     elements.listenMasteryLabel.textContent = mastered ? "已掌握" : "标记掌握";
     elements.listenEn.textContent = word.word;
-    elements.listenZh.textContent =
-      `${registerName(word.topRegister)}最常出现 · ${formatNumber(word.perMillion, 1)} / 百万词 · 离散度 ${word.dispersion === null ? "—" : word.dispersion.toFixed(2)}`;
+    elements.listenZh.textContent = word.zh;
     const progressPercent = ((listen.index + 1) / total) * 100;
     elements.listenScrubber.max = String(total);
     elements.listenScrubber.value = String(listen.index + 1);
@@ -853,6 +858,7 @@
     elements.spotlightWord.textContent = word.word;
     elements.spotlightPos.textContent = posName(word.pos);
     elements.spotlightFrequency.textContent = `${formatNumber(word.perMillion, 1)} / 百万词`;
+    elements.spotlightZh.textContent = word.zh;
     elements.spotlightPlay.dataset.rank = String(word.rank);
     elements.spotlightOpen.dataset.rank = String(word.rank);
     elements.spotlightRegister.innerHTML = registers
@@ -948,6 +954,7 @@
     elements.detailWord.textContent = word.word;
     elements.detailPos.textContent = posName(word.pos);
     elements.detailFrequency.textContent = `${formatNumber(word.perMillion, 2)} / 百万词`;
+    elements.detailZh.textContent = word.zh;
     elements.detailPerMillion.textContent = formatNumber(word.perMillion, word.perMillion < 100 ? 1 : 0);
     elements.detailCoverage.textContent = `${word.coverage.toFixed(1)}%`;
     elements.detailDispersion.textContent =
@@ -1035,6 +1042,7 @@
     elements.practiceBand.style.setProperty("--band-color", getBandColor(word.rank));
     elements.practicePos.textContent = posName(word.pos);
     elements.practiceFrequency.textContent = `${formatNumber(word.perMillion, 1)} / 百万词`;
+    elements.practiceZhHint.textContent = word.zh;
     elements.practicePlay.dataset.rank = String(word.rank);
     elements.practiceAnswer.hidden = !practice.checked;
     elements.practiceRatings.hidden = !practice.checked;
@@ -1048,6 +1056,7 @@
       elements.practiceAnswerWord.textContent = word.word;
       elements.practiceAnswerMeta.textContent =
         `${posName(word.pos)} · #${word.rank} · ${formatNumber(word.perMillion, 1)} / 百万词`;
+      elements.practiceAnswerZh.textContent = word.zh;
       elements.practiceFeedback.textContent = practice.feedback.text;
       elements.practiceFeedback.className = `practice-feedback ${practice.feedback.level || ""}`.trim();
     }

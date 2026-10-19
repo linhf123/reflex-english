@@ -28,8 +28,8 @@
         }
       })();
     </script>
-    <link rel="stylesheet" href="../shared/tokens.css?v=20261019-3" />
-    <link rel="stylesheet" href="coca.css?v=20261019-3" />
+    <link rel="stylesheet" href="../shared/tokens.css?v=20261019-4" />
+    <link rel="stylesheet" href="coca.css?v=20261019-4" />
   </head>
   <body>
     <a class="skip-link" href="#library">跳到词库</a>
@@ -99,6 +99,7 @@
               <span class="pos-badge" id="spotlight-pos">冠词</span>
               <span id="spotlight-frequency">50,385 / 百万词</span>
             </div>
+            <p class="spotlight-zh" id="spotlight-zh"></p>
           </div>
           <div class="spotlight-register" id="spotlight-register" aria-label="语域分布"></div>
           <div class="spotlight-foot">
@@ -148,7 +149,7 @@
           <input
             id="word-search"
             type="search"
-            placeholder="搜索英文单词…"
+            placeholder="搜索英文或中文释义…"
             autocomplete="off"
             spellcheck="false"
           />
@@ -284,7 +285,11 @@
             <a href="https://github.com/brucewlee/COCA-WordFrequency" target="_blank" rel="noreferrer">brucewlee/COCA-WordFrequency</a>，
             原始语料统计由 <a href="https://www.wordfrequency.info/" target="_blank" rel="noreferrer">wordfrequency.info</a> 发布。
           </p>
-          <p>本站仅作学习研究展示，数据权利归原发布者；释义与例句请通过剑桥词典或 YouGlish 延伸学习。</p>
+          <p>
+            中文释义来自
+            <a href="https://github.com/skywind3000/ECDICT" target="_blank" rel="noreferrer">ECDICT</a>
+            （MIT License）。本站仅作学习研究展示，数据权利归原发布者；更多例句可通过剑桥词典或 YouGlish 延伸学习。
+          </p>
         </div>
       </section>
     </main>
@@ -409,6 +414,7 @@
                 <span class="pos-badge" id="detail-pos">冠词</span>
                 <span id="detail-frequency">50,385.16 / 百万词</span>
               </div>
+              <p class="detail-zh" id="detail-zh"></p>
             </div>
             <button class="detail-play-button" id="detail-play" type="button" aria-label="播放单词">
               <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -488,6 +494,7 @@
             <span id="practice-frequency"></span>
           </div>
           <p class="practice-instruction" id="practice-instruction">听发音，写出你听到的单词</p>
+          <p class="practice-zh-hint" id="practice-zh-hint"></p>
           <button class="practice-speaker" id="practice-play" type="button" aria-label="播放单词发音">
             <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M9.2 6.5v11l9-5.5-9-5.5Z" fill="currentColor" />
@@ -501,6 +508,7 @@
           <div class="practice-answer" id="practice-answer" hidden>
             <p id="practice-answer-word"></p>
             <p id="practice-answer-meta"></p>
+            <p class="practice-answer-zh" id="practice-answer-zh"></p>
             <p class="practice-feedback" id="practice-feedback"></p>
           </div>
         </div>
@@ -536,8 +544,8 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-    <script src="../data/coca-5000.js?v=20261019-3"></script>
-    <script src="../shared/speech.js?v=20261019-3"></script>
-    <script src="app.js?v=20261019-3"></script>
+    <script src="../data/coca-5000.js?v=20261019-4"></script>
+    <script src="../shared/speech.js?v=20261019-4"></script>
+    <script src="app.js?v=20261019-4"></script>
   </body>
 </html>

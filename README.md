@@ -34,6 +34,7 @@ npm run dev
 - 连续听全部 5000 词，右侧浮窗支持可拖动进度、上一词/下一词、收藏、掌握和定位
 - 10 词听写练习，支持发音播放、拼写核对、掌握评级和会话总结
 - 每条词频记录包含每百万词频次、语料覆盖、离散度和 8 类语域分布
+- 5000 条词频条目均带有中文释义，支持中文搜索并显示在词卡、详情、每日一词、连续听浮窗和听写提示中
 - 美式 / 英式发音、收藏、掌握状态、每日一词和随机一词
 - 单词详情提供完整语域图和剑桥中英词典、YouGlish 延伸入口
 - COCA 学习进度使用独立的 `localStorage` 键，不与句子训练混在一起
@@ -49,6 +50,8 @@ COCA 原始仓库没有声明软件或数据许可证，README 说明数据转�
 - `index.html`、`styles.css`、`app.js`：网站主体
 - `coca/`：COCA 5000 子站
 - `data/coca-source.csv`：COCA 词频原始数据
+- `data/coca-zh.csv`：从 ECDICT 提取的 4333 个不同拼写中文释义
+- `data/ECDICT-LICENSE.txt`：ECDICT MIT 许可证
 - `data/coca-5000.js`：由脚本生成的 5000 条词频数据
 - `scripts/build-coca-data.mjs`：重新生成 COCA 数据
 - `shared/tokens.css`：两个栏目共用的设计变量
