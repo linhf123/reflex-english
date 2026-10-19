@@ -1,8 +1,9 @@
 # Reflex English
 
-一个把 1000 句中英对照素材做成“听、想、说”反射训练的静态网站。视觉语言参考了 [Ogden's Basic English](https://ogden.munch.love/) 的暖纸张、衬线字体和分类卡片风格，内容结构则围绕整句练习重新设计。
+一个以“听、想、说”为核心的英语学习静态站点。视觉语言参考了 [Ogden's Basic English](https://ogden.munch.love/) 的暖纸张、衬线字体和分类卡片风格，包含句子反射训练与 COCA 高频词库两个栏目。
 
-在线版本：<https://linhf123.github.io/reflex-english/>
+- 句子训练：<https://linhf123.github.io/reflex-english/>
+- COCA 5000：<https://linhf123.github.io/reflex-english/coca/>
 
 ## 本地运行
 
@@ -14,7 +15,7 @@ npm run dev
 
 也可以直接打开 `index.html`，但建议使用本地服务器，以确保浏览器正确加载数据文件。
 
-## 功能
+## 句子训练
 
 - 1000 句完整中英对照素材，按 10 个生活场景分组
 - 英文、中文即时搜索，场景与学习状态筛选
@@ -26,15 +27,38 @@ npm run dev
 - 学习进度保存在浏览器 `localStorage`，无需登录或后端
 - 键盘快捷键：`⌘/Ctrl + K` 搜索、`Space` 播放、`Enter` 揭晓或下一句
 
+## COCA 5000
+
+- 5000 个 COCA 词元词性条目，覆盖 4333 个不同拼写
+- 按排名、词性、学习状态和语域均衡度浏览
+- 每条词频记录包含每百万词频次、语料覆盖、离散度和 8 类语域分布
+- 美式 / 英式发音、收藏、掌握状态、每日一词和随机一词
+- 单词详情提供完整语域图和剑桥中英词典、YouGlish 延伸入口
+- COCA 学习进度使用独立的 `localStorage` 键，不与句子训练混在一起
+
+COCA 原始仓库没有声明软件或数据许可证，README 说明数据转载自
+<https://www.wordfrequency.info/>。公开使用或再分发前应确认上游数据条款。
+
 ## 数据与结构
 
 - `data/source.md`：原始 1000 句素材
 - `data/sentences.js`：由脚本生成的结构化数据
 - `scripts/build-data.mjs`：重新生成句子数据
 - `index.html`、`styles.css`、`app.js`：网站主体
+- `coca/`：COCA 5000 子站
+- `data/coca-source.csv`：COCA 词频原始数据
+- `data/coca-5000.js`：由脚本生成的 5000 条词频数据
+- `scripts/build-coca-data.mjs`：重新生成 COCA 数据
+- `shared/tokens.css`：两个栏目共用的设计变量
 
 修改 `data/source.md` 后运行：
 
 ```bash
 npm run build:data
+```
+
+重新生成 COCA 数据：
+
+```bash
+npm run build:coca
 ```

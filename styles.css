@@ -1,75 +1,3 @@
-:root {
-  color-scheme: light;
-  --paper: #f7f1e6;
-  --paper-deep: #efe5d5;
-  --surface: #fcf8f0;
-  --surface-strong: #fffdf8;
-  --ink: #241d18;
-  --ink-soft: #5e544b;
-  --ink-faint: #8d8175;
-  --line: #e3d8c6;
-  --line-strong: #cfc0a8;
-  --rust: #a8481e;
-  --rust-deep: #813516;
-  --rust-soft: #f1ddce;
-  --moss: #536b4f;
-  --gold: #98722b;
-  --blue: #465d79;
-  --plum: #79596f;
-  --night: #28201a;
-  --night-soft: #342a22;
-  --cream: #f6eddc;
-  --danger: #a6463c;
-  --serif: "Cormorant Garamond", "Noto Serif SC", "Songti SC", Georgia, serif;
-  --sans: "Inter", -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
-  --zh-serif: "Noto Serif SC", "Songti SC", "Source Han Serif SC", serif;
-  --shadow-sm: 0 1px 2px rgba(43, 30, 19, 0.04), 0 10px 24px rgba(43, 30, 19, 0.045);
-  --shadow-md: 0 18px 52px rgba(43, 30, 19, 0.1);
-  --shadow-lg: 0 32px 90px rgba(35, 25, 17, 0.18);
-  --radius-sm: 10px;
-  --radius-md: 18px;
-  --radius-lg: 30px;
-  --nav-bg: rgba(247, 241, 230, 0.9);
-  --topbar-line: rgba(36, 29, 24, 0.13);
-  --hero-glow: rgba(168, 72, 30, 0.11);
-  --card-hover: #fffdf8;
-  --input-bg: rgba(255, 253, 248, 0.72);
-  --modal-backdrop: rgba(28, 21, 16, 0.56);
-}
-
-html[data-theme="dark"] {
-  color-scheme: dark;
-  --paper: #17130f;
-  --paper-deep: #211a15;
-  --surface: #201a15;
-  --surface-strong: #271f19;
-  --ink: #f2e9dc;
-  --ink-soft: #c7b9a8;
-  --ink-faint: #948577;
-  --line: #382f27;
-  --line-strong: #514237;
-  --rust: #df7a4b;
-  --rust-deep: #ef9568;
-  --rust-soft: rgba(168, 72, 30, 0.18);
-  --moss: #8aa184;
-  --gold: #c59a51;
-  --blue: #8ca7c5;
-  --plum: #ad88a2;
-  --night: #0f0c0a;
-  --night-soft: #1b1612;
-  --cream: #f2e9dc;
-  --danger: #df8279;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.18), 0 14px 28px rgba(0, 0, 0, 0.12);
-  --shadow-md: 0 20px 54px rgba(0, 0, 0, 0.28);
-  --shadow-lg: 0 34px 100px rgba(0, 0, 0, 0.46);
-  --nav-bg: rgba(23, 19, 15, 0.9);
-  --topbar-line: rgba(242, 233, 220, 0.12);
-  --hero-glow: rgba(223, 122, 75, 0.09);
-  --card-hover: #2a221b;
-  --input-bg: rgba(39, 31, 25, 0.78);
-  --modal-backdrop: rgba(0, 0, 0, 0.72);
-}
-
 * {
   box-sizing: border-box;
   margin: 0;
@@ -2961,7 +2889,7 @@ kbd {
     font-size: 11px;
   }
 
-  .topbar-links a:nth-child(2) {
+  .topbar-links a[href="#method"] {
     display: none;
   }
 
