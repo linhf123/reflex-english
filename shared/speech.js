@@ -3,37 +3,25 @@
 
   const preferredNames = {
     "en-US": [
-      "sandy",
-      "flo",
-      "shelley",
-      "reed",
-      "eddy",
+      "samantha",
+      "alex",
+      "ava",
+      "google us english",
       "zira",
       "mark",
       "david",
-      "ava",
-      "allison",
-      "susan",
-      "google us english",
-      "samantha",
     ],
     "en-GB": [
-      "flo",
-      "shelley",
-      "reed",
-      "eddy",
-      "hazel",
-      "george",
+      "daniel",
       "serena",
       "kate",
       "google uk english",
-      "daniel",
+      "hazel",
+      "george",
     ],
   };
 
-  const naturalTokens = ["natural", "neural", "premium", "enhanced"];
-
-  function pickVoice(voices, lang) {
+  function matchingVoices(voices, lang) {
     let matching = voices.filter((voice) =>
       voice.lang.toLowerCase().replace("_", "-").startsWith(lang.toLowerCase()),
     );
@@ -42,24 +30,29 @@
         voice.lang.toLowerCase().replace("_", "-").startsWith("en"),
       );
     }
+    return matching;
+  }
+
+  function pickVoice(voices, lang) {
+    const matching = matchingVoices(voices, lang);
     if (!matching.length) return null;
 
     const preferred = preferredNames[lang] || preferredNames["en-US"];
-    const scored = matching.map((voice) => {
-      const name = voice.name.toLowerCase();
-      let score = 0;
-      if (voice.localService) score += 120;
-      if (naturalTokens.some((token) => name.includes(token))) score += 34;
-      const preferredIndex = preferred.findIndex((candidate) => name.includes(candidate));
-      if (preferredIndex >= 0) score += 76 - preferredIndex * 3;
-      if (name.includes("google")) score += voice.localService ? 4 : -8;
-      if (name.includes("microsoft")) score += 46;
-      if (voice.default) score += 3;
-      return { voice, score };
-    });
+    for (const candidate of preferred) {
+      const voice = matching.find((item) => item.name.toLowerCase().includes(candidate));
+      if (voice) return voice;
+    }
+    return matching.find((voice) => voice.default)
+      || matching.find((voice) => voice.localService)
+      || matching[0];
+  }
 
-    scored.sort((a, b) => b.score - a.score);
-    return scored[0].voice;
+  function pickFallbackVoice(voices, lang) {
+    const matching = matchingVoices(voices, lang);
+    if (!matching.length) return null;
+    return matching.find((voice) => voice.localService)
+      || matching.find((voice) => voice.default)
+      || matching[0];
   }
 
   function errorMessage(error) {
@@ -81,5 +74,20 @@
     return "语音播放失败，请检查系统声音和设备输出";
   }
 
-  window.ReflexSpeech = { pickVoice, errorMessage };
+  function isRecoverableError(error) {
+    return [
+      "network",
+      "voice-unavailable",
+      "language-unavailable",
+      "synthesis-unavailable",
+      "synthesis-failed",
+    ].includes(error);
+  }
+
+  window.ReflexSpeech = {
+    pickVoice,
+    pickFallbackVoice,
+    errorMessage,
+    isRecoverableError,
+  };
 })();

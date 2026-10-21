@@ -134,6 +134,7 @@
   let voices = [];
   let speakingButton = null;
   let activeSpeech = null;
+  let voiceFallbackActive = false;
 
   function loadProgress() {
     const fallback = {
@@ -492,7 +493,10 @@
     voices = window.speechSynthesis.getVoices();
   }
 
-  function findVoice(lang) {
+  function findVoice(lang, useFallback = voiceFallbackActive) {
+    if (useFallback) {
+      return window.ReflexSpeech?.pickFallbackVoice(voices, lang) || null;
+    }
     return window.ReflexSpeech?.pickVoice(voices, lang) || null;
   }
 
@@ -503,14 +507,14 @@
     document.querySelectorAll(".is-speaking").forEach((button) => button.classList.remove("is-speaking"));
   }
 
-  function createUtterance(text) {
+  function createUtterance(text, forceFallback = false) {
     if (!voices.length) loadVoices();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = progress.voiceLang;
     utterance.rate = progress.rate;
     utterance.pitch = 1;
 
-    const voice = findVoice(progress.voiceLang);
+    const voice = findVoice(progress.voiceLang, forceFallback || voiceFallbackActive);
     if (voice) {
       utterance.voice = voice;
       utterance.lang = voice.lang;
@@ -544,6 +548,16 @@
       if (activeSpeech !== utterance) return;
       clearSpeakingState();
       if (event.error === "canceled" || event.error === "interrupted") return;
+      if (
+        !voiceFallbackActive &&
+        window.ReflexSpeech?.isRecoverableError(event.error)
+      ) {
+        voiceFallbackActive = true;
+        updateVoiceButton();
+        showToast("原音色不可用，已自动降级为本地语音");
+        speak(text, button);
+        return;
+      }
       showToast(
         window.ReflexSpeech?.errorMessage(event.error) ||
           "朗读没有成功，请再试一次",
@@ -708,6 +722,17 @@
     utterance.onerror = (event) => {
       if (state.listen !== listen || listen.utterance !== utterance) return;
       if (event.error === "canceled" || event.error === "interrupted") return;
+      if (
+        !voiceFallbackActive &&
+        window.ReflexSpeech?.isRecoverableError(event.error)
+      ) {
+        listen.utterance = null;
+        voiceFallbackActive = true;
+        updateVoiceButton();
+        showToast("原音色不可用，已自动降级为本地语音");
+        playListeningSentence();
+        return;
+      }
       listen.utterance = null;
       listen.playing = false;
       window.ReflexPlayback?.setActive(false);
@@ -877,7 +902,7 @@
 
   function updateVoiceButton() {
     const us = progress.voiceLang === "en-US";
-    const voice = findVoice(progress.voiceLang);
+    const voice = findVoice(progress.voiceLang, voiceFallbackActive);
     const voiceName = voice?.name || "系统默认语音";
     const voiceScope = voice ? (voice.localService ? "本地" : "联网") : "默认";
     elements.voiceLabel.textContent = us ? "美音" : "英音";
@@ -1230,6 +1255,7 @@
     });
 
     elements.voiceButton.addEventListener("click", () => {
+      voiceFallbackActive = false;
       progress.voiceLang = progress.voiceLang === "en-US" ? "en-GB" : "en-US";
       saveProgress();
       updateVoiceButton();
