@@ -504,13 +504,17 @@
   }
 
   function createUtterance(text) {
+    if (!voices.length) loadVoices();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = progress.voiceLang;
     utterance.rate = progress.rate;
     utterance.pitch = 1;
 
     const voice = findVoice(progress.voiceLang);
-    if (voice) utterance.voice = voice;
+    if (voice) {
+      utterance.voice = voice;
+      utterance.lang = voice.lang;
+    }
     return utterance;
   }
 
@@ -536,13 +540,18 @@
       if (activeSpeech !== utterance) return;
       clearSpeakingState();
     };
-    utterance.onerror = () => {
+    utterance.onerror = (event) => {
       if (activeSpeech !== utterance) return;
       clearSpeakingState();
-      showToast("朗读没有成功，请再试一次");
+      if (event.error === "canceled" || event.error === "interrupted") return;
+      showToast(
+        window.ReflexSpeech?.errorMessage(event.error) ||
+          "朗读没有成功，请再试一次",
+      );
     };
 
     window.speechSynthesis.speak(utterance);
+    window.speechSynthesis.resume();
   }
 
   function speakSentence(id, button = null) {
@@ -554,6 +563,10 @@
     if (!("speechSynthesis" in window)) {
       showToast("当前浏览器不支持连续朗读");
       return;
+    }
+    loadVoices();
+    if (!voices.some((voice) => voice.lang.toLowerCase().startsWith("en") && voice.localService)) {
+      showToast("未检测到本地英文语音，Windows 请在系统中安装英文语音包");
     }
 
     if (state.listen) {
@@ -582,8 +595,12 @@
       utterance: null,
       timer: 0,
     };
+    window.ReflexPlayback?.setActive(true);
     elements.listenDock.hidden = false;
     playListeningSentence();
+    if (window.matchMedia("(pointer: coarse)").matches) {
+      showToast("已尝试保持屏幕常亮；息屏后部分手机仍会暂停语音");
+    }
   }
 
   function renderListeningDock() {
@@ -669,6 +686,7 @@
 
     const utterance = createUtterance(sentence.en);
     listen.utterance = utterance;
+    window.ReflexPlayback?.setActive(true);
 
     utterance.onend = () => {
       if (state.listen !== listen || listen.utterance !== utterance) return;
@@ -692,12 +710,17 @@
       if (event.error === "canceled" || event.error === "interrupted") return;
       listen.utterance = null;
       listen.playing = false;
+      window.ReflexPlayback?.setActive(false);
       renderListeningDock();
-      showToast("连续朗读中断了，请点播放继续");
+      showToast(
+        window.ReflexSpeech?.errorMessage(event.error) ||
+          "连续朗读中断了，请点播放继续",
+      );
     };
 
     renderListeningDock();
     window.speechSynthesis.speak(utterance);
+    window.speechSynthesis.resume();
   }
 
   function pauseListening() {
@@ -709,6 +732,7 @@
     listen.utterance = null;
     window.clearTimeout(listen.timer);
     window.speechSynthesis.cancel();
+    window.ReflexPlayback?.setActive(false);
     clearSpeakingState();
     renderListeningDock();
   }
@@ -720,6 +744,7 @@
     listen.finished = false;
     listen.scrubbing = false;
     listen.playing = true;
+    window.ReflexPlayback?.setActive(true);
     playListeningSentence();
   }
 
@@ -762,6 +787,7 @@
     listen.utterance = null;
     window.clearTimeout(listen.timer);
     window.speechSynthesis.cancel();
+    window.ReflexPlayback?.setActive(false);
     clearSpeakingState();
     renderListeningDock();
   }
@@ -773,6 +799,7 @@
     listen.utterance = null;
     state.listen = null;
     window.speechSynthesis.cancel();
+    window.ReflexPlayback?.setActive(false);
     clearSpeakingState();
     elements.listenDock.hidden = true;
     syncListeningCardHighlight();
@@ -852,9 +879,10 @@
     const us = progress.voiceLang === "en-US";
     const voice = findVoice(progress.voiceLang);
     const voiceName = voice?.name || "系统默认语音";
+    const voiceScope = voice ? (voice.localService ? "本地" : "联网") : "默认";
     elements.voiceLabel.textContent = us ? "美音" : "英音";
     elements.voiceButton.querySelector(".tool-icon").textContent = us ? "US" : "UK";
-    elements.voiceButton.title = `当前音色：${voiceName} · 点击切换美式/英式`;
+    elements.voiceButton.title = `当前音色：${voiceName}（${voiceScope}）· 点击切换美式/英式`;
     elements.voiceButton.setAttribute(
       "aria-label",
       `当前${us ? "美" : "英"}式发音，音色 ${voiceName}，点击切换`,

@@ -465,8 +465,8 @@ html[data-theme="dark"] .coca-hero::after {
   overflow: hidden;
   color: var(--ink-soft);
   font-family: var(--zh-serif);
-  font-size: 11px;
-  line-height: 1.62;
+  font-size: 12px;
+  line-height: 1.65;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
@@ -1247,13 +1247,13 @@ main {
 
 .word-zh {
   display: -webkit-box;
-  min-height: 34px;
+  min-height: 37px;
   margin-top: 9px;
   overflow: hidden;
   color: var(--ink-soft);
   font-family: var(--zh-serif);
-  font-size: 11px;
-  line-height: 1.58;
+  font-size: 12px;
+  line-height: 1.62;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
@@ -1968,12 +1968,12 @@ html[data-theme="dark"] .listen-dock {
 }
 
 .listen-zh {
-  min-height: 33px;
+  min-height: 39px;
   margin-top: 7px;
   color: var(--ink-soft);
   font-family: var(--zh-serif);
-  font-size: 10px;
-  line-height: 1.6;
+  font-size: 12px;
+  line-height: 1.65;
 }
 
 .listen-controls {
@@ -2227,8 +2227,8 @@ html[data-theme="dark"] .listen-dock {
   margin-top: 11px;
   color: var(--ink-soft);
   font-family: var(--zh-serif);
-  font-size: 14px;
-  line-height: 1.8;
+  font-size: 16px;
+  line-height: 1.82;
 }
 
 .detail-play-button {
@@ -2596,8 +2596,8 @@ html[data-theme="dark"] .listen-dock {
   margin: 9px auto 0;
   color: var(--ink-soft);
   font-family: var(--zh-serif);
-  font-size: 12px;
-  line-height: 1.7;
+  font-size: 13.5px;
+  line-height: 1.72;
   text-align: center;
 }
 
@@ -2721,8 +2721,8 @@ html[data-theme="dark"] .listen-dock {
   margin: 8px auto 0;
   color: var(--ink-soft);
   font-family: var(--zh-serif);
-  font-size: 10px;
-  line-height: 1.7;
+  font-size: 12px;
+  line-height: 1.72;
 }
 
 .practice-feedback {
