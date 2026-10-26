@@ -129,8 +129,6 @@
     visible: PAGE_SIZE,
     practice: null,
     listen: null,
-    // 单张卡片的临时展开状态（id -> 答案是否可见），只在本次会话内有效。
-    answerOverrides: new Map(),
   };
 
   let progress = loadProgress();
@@ -141,6 +139,31 @@
   let speakingButton = null;
   let activeSpeech = null;
   let voiceFallbackActive = false;
+
+  // 方向与答案显隐的逻辑与 COCA 共用 shared/answer-mode.js
+  const answerMode = window.ReflexAnswerMode.create({
+    get progress() {
+      return progress;
+    },
+    save: saveProgress,
+    rerender: () => renderCards({ animate: false }),
+    toast: showToast,
+    getQuery: () => state.query,
+    primary: ".card-en",
+    secondary: ".card-zh",
+    cardSelector: (id) => `.sentence-card[data-id="${id}"]`,
+    button: {
+      root: elements.answerButton,
+      label: elements.answerLabel,
+      icon: elements.answerIcon,
+    },
+    switchRoot: elements.directionSwitch,
+    labels: { primary: "英文", secondary: "中文" },
+  });
+
+  const isReverse = () => answerMode.isReverse();
+  const isAnswerVisible = (id) => answerMode.isVisible(id);
+  const toggleAnswer = (id) => answerMode.toggle(id);
 
   function loadProgress() {
     const fallback = {
@@ -312,104 +335,15 @@
     `;
   }
 
-  function isReverse() {
-    return progress.direction === "zh2en";
-  }
-
-  // 用答案那一侧的语言搜索时自动展开，否则会搜到一堆看不见的匹配项。
-  function queryForcesAnswer() {
-    if (!state.query.trim()) return false;
-    const hasCjk = /[\u3400-\u9fff]/.test(state.query);
-    return isReverse() ? !hasCjk : hasCjk;
-  }
-
-  function isAnswerVisible(id) {
-    if (state.answerOverrides.has(id)) return state.answerOverrides.get(id);
-    if (queryForcesAnswer()) return true;
-    return progress.answerVisible;
-  }
-
-  function applyCardAnswer(card, visible) {
-    if (!card) return;
-    const reverse = isReverse();
-    const target = reverse ? "英文" : "中文";
-    card
-      .querySelector(".card-zh")
-      ?.classList.toggle("is-answer-hidden", !visible && !reverse);
-    card
-      .querySelector(".card-en")
-      ?.classList.toggle("is-answer-hidden", !visible && reverse);
-
-    const button = card.querySelector(".card-zh");
-    if (button) button.title = `${visible ? "点击隐藏" : "点击查看"}${target}`;
-  }
-
-  function toggleAnswer(id) {
-    const next = !isAnswerVisible(id);
-    state.answerOverrides.set(id, next);
-    applyCardAnswer(elements.grid.querySelector(`.sentence-card[data-id="${id}"]`), next);
-  }
-
-  function setAnswerVisible(visible, options = {}) {
-    progress.answerVisible = visible;
-    state.answerOverrides.clear();
-    saveProgress();
-    updateAnswerButton();
-    renderCards({ animate: false });
-    if (options.silent) return;
-
-    const target = isReverse() ? "英文" : "中文";
-    if (visible) {
-      showToast(`已显示全部${target}`);
-    } else {
-      showToast(
-        queryForcesAnswer() ? "搜索答案语言时保持展开，清空搜索后生效" : `已隐藏全部${target}`,
-      );
-    }
-  }
-
-  function updateAnswerButton() {
-    const reverse = isReverse();
-    const visible = progress.answerVisible;
-    const target = reverse ? "英文" : "中文";
-    elements.answerLabel.textContent = `${visible ? "隐藏" : "显示"}${target}`;
-    elements.answerIcon.textContent = reverse ? "EN" : "中";
-    elements.answerButton.classList.toggle("is-on", visible);
-    elements.answerButton.title = visible
-      ? `当前显示${target}，点击全部隐藏`
-      : `当前隐藏${target}，点击全部显示`;
-    elements.answerButton.setAttribute("aria-label", elements.answerButton.title);
-  }
-
-  function updateDirectionSwitch() {
-    elements.directionSwitch.querySelectorAll("[data-direction]").forEach((button) => {
-      const active = button.dataset.direction === progress.direction;
-      button.classList.toggle("active", active);
-      button.setAttribute("aria-pressed", String(active));
-    });
-  }
-
-  function setDirection(direction) {
-    if (progress.direction === direction) return;
-    progress.direction = direction;
-    state.answerOverrides.clear();
-    saveProgress();
-    updateDirectionSwitch();
-    updateAnswerButton();
-    renderCards({ animate: false });
-    showToast(direction === "zh2en" ? "已切换为中译英" : "已切换为英译中");
-  }
-
   function renderCard(sentence, index) {
     const mastered = progress.mastered.includes(sentence.id);
     const starred = progress.starred.includes(sentence.id);
-    const answerShown = isAnswerVisible(sentence.id);
-    const reverse = isReverse();
+    const answer = answerMode.classesFor(sentence.id);
     const scene = sceneMap.get(sentence.scene);
     const classes = ["sentence-card"];
     if (mastered) classes.push("is-mastered");
     if (starred) classes.push("is-starred");
-    if (reverse) classes.push("is-reverse");
+    if (answer.reverse) classes.push("is-reverse");
 
     return `
       <article
@@ -423,13 +357,13 @@
           ${sceneBadge(sentence)}
         </div>
         <div class="card-body">
-          <p class="card-en${!answerShown && reverse ? " is-answer-hidden" : ""}" lang="en">${highlight(sentence.en, state.query)}</p>
+          <p class="card-en${answer.primaryHidden ? " is-answer-hidden" : ""}" lang="en">${highlight(sentence.en, state.query)}</p>
           <button
-            class="card-zh${!answerShown && !reverse ? " is-answer-hidden" : ""}"
+            class="card-zh${answer.secondaryHidden ? " is-answer-hidden" : ""}"
             type="button"
             lang="zh-CN"
             data-action="reveal"
-            title="${answerShown ? "点击隐藏" : "点击查看"}${reverse ? "英文" : "中文"}"
+            title="${answer.secondaryHidden ? "点击查看" : "点击隐藏"}${answer.reverse ? "英文" : "中文"}"
           >${highlight(sentence.zh, state.query)}</button>
         </div>
         <div class="card-footer">
@@ -1439,13 +1373,7 @@
       applyTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
     });
 
-    elements.answerButton.addEventListener("click", () => {
-      setAnswerVisible(!progress.answerVisible);
-    });
-
-    elements.directionSwitch.querySelectorAll("[data-direction]").forEach((button) => {
-      button.addEventListener("click", () => setDirection(button.dataset.direction));
-    });
+    answerMode.bind();
 
     elements.voiceButton.addEventListener("click", () => {
       voiceFallbackActive = false;
@@ -1541,13 +1469,11 @@
         direction: "en2zh",
         answerVisible: false,
       };
-      state.answerOverrides.clear();
       saveProgress();
       recordStudyDate();
       updateVoiceButton();
       updateRateButton();
-      updateAnswerButton();
-      updateDirectionSwitch();
+      answerMode.reset();
       resetFilters();
       elements.resetProgress.dataset.confirm = "";
       elements.resetProgress.textContent = "清除本机学习记录";
@@ -1710,8 +1636,7 @@
     applyTheme(document.documentElement.dataset.theme || "light");
     updateVoiceButton();
     updateRateButton();
-    updateAnswerButton();
-    updateDirectionSwitch();
+    answerMode.reset();
     setTodaySentence();
     renderScenePills();
     recordStudyDate();

@@ -908,23 +908,6 @@ html[data-theme="dark"] .library-nav.is-scrolled {
   letter-spacing: 0.03em;
 }
 
-.answer-button .tool-icon {
-  font-family: var(--zh-serif);
-  font-size: 10px;
-  font-weight: 600;
-}
-
-.answer-button.is-on {
-  border-color: color-mix(in srgb, var(--rust) 34%, transparent);
-  background: color-mix(in srgb, var(--rust) 9%, transparent);
-  color: var(--rust-deep);
-}
-
-.answer-button.is-on .tool-icon {
-  background: var(--rust);
-  color: var(--paper);
-}
-
 .theme-icon {
   position: relative;
   display: block;
@@ -1032,41 +1015,6 @@ main {
   font-size: 11px;
   letter-spacing: 0.08em;
   white-space: nowrap;
-}
-
-.direction-switch {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--surface) 66%, transparent);
-  padding: 3px;
-}
-
-.direction-pill {
-  border: 0;
-  border-radius: 999px;
-  background: transparent;
-  color: var(--ink-faint);
-  padding: 4px 9px;
-  font-family: var(--zh-serif);
-  font-size: 10px;
-  line-height: 1.4;
-  white-space: nowrap;
-  cursor: pointer;
-  transition:
-    color 0.15s ease,
-    background-color 0.15s ease;
-}
-
-.direction-pill:hover {
-  color: var(--ink);
-}
-
-.direction-pill.active {
-  background: var(--rust-soft);
-  color: var(--rust-deep);
 }
 
 .shuffle-button {
@@ -1284,12 +1232,6 @@ main {
   overflow-wrap: anywhere;
 }
 
-.card-en,
-.card-zh {
-  position: relative;
-  transition: color 0.22s ease;
-}
-
 .card-en mark,
 .card-zh mark {
   border-radius: 2px;
@@ -1341,42 +1283,6 @@ main {
   font-weight: 400;
   letter-spacing: 0;
   line-height: 1.6;
-}
-
-/* 答案隐藏：文字留位但不可见，用虚线点占位，点击原地展开，不产生重排 */
-.sentence-card .card-en.is-answer-hidden,
-.sentence-card .card-zh.is-answer-hidden {
-  color: transparent;
-  user-select: none;
-}
-
-.sentence-card .card-en.is-answer-hidden mark,
-.sentence-card .card-zh.is-answer-hidden mark {
-  background: transparent;
-}
-
-.sentence-card .card-en.is-answer-hidden::after,
-.sentence-card .card-zh.is-answer-hidden::after {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  overflow: hidden;
-  color: var(--ink-faint);
-  font-family: var(--zh-serif);
-  font-size: 13px;
-  font-weight: 400;
-  letter-spacing: 0.24em;
-  line-height: 1;
-  white-space: nowrap;
-  content: "· · · · · · · · · · · · · · · · · ·";
-  pointer-events: none;
-  transition: color 0.18s ease;
-}
-
-.sentence-card .card-en.is-answer-hidden:hover::after,
-.sentence-card .card-zh.is-answer-hidden:hover::after {
-  color: var(--rust);
 }
 
 .card-footer {

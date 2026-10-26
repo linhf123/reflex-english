@@ -1258,6 +1258,47 @@ main {
   -webkit-line-clamp: 2;
 }
 
+/* 切方向 / 显隐答案时重绘不播入场动画 */
+.word-grid.no-anim .word-card {
+  animation: none;
+}
+
+/* ---------- 中译英：中文释义变成题面，英文退成答案 ---------- */
+.word-card.is-reverse .word-main {
+  display: flex;
+  flex-direction: column;
+}
+
+.word-card.is-reverse .word-zh {
+  order: 1;
+  min-height: 64px;
+  margin-top: 18px;
+  color: var(--ink);
+  font-size: clamp(20px, 1.85vw, 24px);
+  line-height: 1.45;
+  letter-spacing: 0.005em;
+}
+
+.word-card.is-reverse .word-open {
+  order: 2;
+  margin-top: 10px;
+}
+
+.word-card.is-reverse .word-open .word {
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1.5;
+}
+
+.word-card.is-reverse .word-subline {
+  order: 3;
+}
+
+.word-card.is-reverse .word-context {
+  order: 4;
+}
+
 .word-subline {
   display: flex;
   align-items: center;

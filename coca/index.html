@@ -28,8 +28,9 @@
         }
       })();
     </script>
-    <link rel="stylesheet" href="../shared/tokens.css?v=20261021-2" />
-    <link rel="stylesheet" href="coca.css?v=20261021-2" />
+    <link rel="stylesheet" href="../shared/tokens.css?v=20261026-3" />
+    <link rel="stylesheet" href="coca.css?v=20261026-3" />
+    <link rel="stylesheet" href="../shared/library.css?v=20261026-3" />
   </head>
   <body>
     <a class="skip-link" href="#library">跳到词库</a>
@@ -190,6 +191,16 @@
               <span class="theme-icon" aria-hidden="true"></span>
               <span class="tool-label">主题</span>
             </button>
+            <button
+              class="tool-button answer-button"
+              id="answer-button"
+              type="button"
+              aria-label="当前隐藏中文释义，点击显示全部"
+              title="当前隐藏中文释义，点击显示全部"
+            >
+              <span class="tool-icon" id="answer-icon" aria-hidden="true">中</span>
+              <span class="tool-label" id="answer-label">显示中文</span>
+            </button>
             <button class="word-practice-button" id="word-practice" type="button">
               <span aria-hidden="true"></span>
               单词听写
@@ -207,7 +218,11 @@
             <h2 id="section-title">全部词汇</h2>
           </div>
           <div class="section-heading-right">
-            <p id="result-count">5000 条</p>
+            <div class="direction-switch" id="direction-switch" role="group" aria-label="练习方向">
+              <button class="direction-pill active" type="button" data-direction="en2zh">英译中</button>
+              <button class="direction-pill" type="button" data-direction="zh2en">中译英</button>
+            </div>
+            <p id="result-count" role="status" aria-live="polite">5000 条</p>
             <button class="listen-all-button" id="listen-all" type="button">
               <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="M5 13v-1a7 7 0 0 1 14 0v1M5 13h2.2v5H5.8A1.8 1.8 0 0 1 4 16.2v-1.4A1.8 1.8 0 0 1 5.8 13H5Zm14 0h-.8a1.8 1.8 0 0 1 1.8 1.8v1.4a1.8 1.8 0 0 1-1.8 1.8h-1.4v-5H19Z" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" />
@@ -231,7 +246,7 @@
           <p id="band-intro-text"></p>
         </div>
 
-        <div class="word-grid" id="word-grid" aria-live="polite"></div>
+        <div class="word-grid" id="word-grid"></div>
 
         <div class="empty-state" id="empty-state" hidden>
           <div class="empty-glyph" aria-hidden="true">Aa</div>
@@ -544,9 +559,10 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-    <script src="../data/coca-5000.js?v=20261021-2"></script>
-    <script src="../shared/speech.js?v=20261021-2"></script>
-    <script src="../shared/playback.js?v=20261021-2"></script>
-    <script src="app.js?v=20261021-2"></script>
+    <script src="../data/coca-5000.js?v=20261026-3"></script>
+    <script src="../shared/speech.js?v=20261026-3"></script>
+    <script src="../shared/playback.js?v=20261026-3"></script>
+    <script src="../shared/answer-mode.js?v=20261026-3"></script>
+    <script src="app.js?v=20261026-3"></script>
   </body>
 </html>

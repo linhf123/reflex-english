@@ -65,6 +65,10 @@
     browseWords: document.getElementById("browse-words"),
     randomWord: document.getElementById("random-word"),
     themeButton: document.getElementById("theme-button"),
+    answerButton: document.getElementById("answer-button"),
+    answerLabel: document.getElementById("answer-label"),
+    answerIcon: document.getElementById("answer-icon"),
+    directionSwitch: document.getElementById("direction-switch"),
     voiceButton: document.getElementById("voice-button"),
     voiceLabel: document.getElementById("voice-label"),
     rateButton: document.getElementById("rate-button"),
@@ -157,6 +161,27 @@
   let voiceFallbackActive = false;
   let definitionToken = 0;
 
+  // 方向与答案显隐的逻辑与句子库共用 shared/answer-mode.js
+  const answerMode = window.ReflexAnswerMode.create({
+    get progress() {
+      return progress;
+    },
+    save: saveProgress,
+    rerender: () => renderWords({ animate: false }),
+    toast: showToast,
+    getQuery: () => state.query,
+    primary: ".word",
+    secondary: ".word-zh",
+    cardSelector: (rank) => `.word-card[data-rank="${rank}"]`,
+    button: {
+      root: elements.answerButton,
+      label: elements.answerLabel,
+      icon: elements.answerIcon,
+    },
+    switchRoot: elements.directionSwitch,
+    labels: { primary: "英文", secondary: "中文释义" },
+  });
+
   function loadProgress() {
     const fallback = {
       starred: [],
@@ -164,6 +189,8 @@
       studyDates: [],
       voiceLang: "en-US",
       rate: 0.8,
+      direction: "en2zh",
+      answerVisible: false,
     };
 
     try {
@@ -181,6 +208,8 @@
           : [],
         voiceLang: saved.voiceLang === "en-GB" ? "en-GB" : "en-US",
         rate: RATE_STEPS.includes(Number(saved.rate)) ? Number(saved.rate) : 0.8,
+        direction: saved.direction === "zh2en" ? "zh2en" : "en2zh",
+        answerVisible: saved.answerVisible === true,
       };
     } catch {
       return fallback;
@@ -323,30 +352,43 @@
     const color = getBandColor(word.rank);
     const levels = registerLevels(word);
     const dispersion = word.dispersion === null ? "—" : word.dispersion.toFixed(2);
+    const answer = answerMode.classesFor(word.rank);
     const classes = ["word-card"];
     if (progress.starred.includes(word.rank)) classes.push("is-starred");
     if (progress.mastered.includes(word.rank)) classes.push("is-mastered");
+    if (answer.reverse) classes.push("is-reverse");
+
+    // 中译英时别让读屏和 title 提前泄露答案
+    const cardLabel = answer.reverse
+      ? `第 ${word.rank} 名，${escapeHTML(word.zh)}`
+      : `第 ${word.rank} 名，${escapeHTML(word.word)}`;
+    const openLabel = answer.reverse ? "查看词频详情" : `查看 ${escapeHTML(word.word)} 的详情`;
 
     return `
       <article
         class="${classes.join(" ")}"
         data-rank="${word.rank}"
         style="--band-color: ${color}; --card-index: ${index % 24}"
-        aria-label="第 ${word.rank} 名，${escapeHTML(word.word)}"
+        aria-label="${cardLabel}"
       >
         <div class="card-topline">
           <span class="rank-label">#${String(word.rank).padStart(4, "0")}</span>
           <span class="band-badge">${escapeHTML(band.zh)}</span>
         </div>
         <div class="word-main">
-          <button class="word-open" type="button" data-action="detail" aria-label="查看 ${escapeHTML(word.word)} 的详情">
-            <span class="word" lang="en">${highlight(word.word, state.query)}</span>
+          <button class="word-open" type="button" data-action="detail" aria-label="${openLabel}">
+            <span class="word${answer.primaryHidden ? " is-answer-hidden" : ""}" lang="en">${highlight(word.word, state.query)}</span>
           </button>
           <div class="word-subline">
             <span class="pos-badge">${escapeHTML(posName(word.pos))}</span>
             <span>${formatNumber(word.perMillion, word.perMillion < 100 ? 1 : 0)} / 百万词</span>
           </div>
-          <p class="word-zh" lang="zh-CN">${highlight(word.zh, state.query)}</p>
+          <p
+            class="word-zh${answer.secondaryHidden ? " is-answer-hidden" : ""}"
+            lang="zh-CN"
+            data-action="reveal"
+            title="${answer.secondaryHidden ? "点击查看" : "点击隐藏"}${answer.reverse ? "英文" : "中文释义"}"
+          >${highlight(word.zh, state.query)}</p>
           <p class="word-context">
             <strong>${escapeHTML(registerName(word.topRegister))}</strong> 最常出现
             · 离散度 ${dispersion} · 覆盖 ${word.coverage.toFixed(1)}%
@@ -411,9 +453,11 @@
       : "";
   }
 
-  function renderWords() {
+  function renderWords(options = {}) {
     const filtered = getFilteredWords();
     const visible = filtered.slice(0, state.visible);
+    // 切换方向 / 显隐答案时不要重播入场动画
+    elements.grid.classList.toggle("no-anim", options.animate === false);
     elements.grid.innerHTML = visible.map(renderCard).join("");
     elements.grid.hidden = filtered.length === 0;
     elements.emptyState.hidden = filtered.length !== 0;
@@ -1241,6 +1285,8 @@
   }
 
   function bindEvents() {
+    answerMode.bind();
+
     elements.bandPills.addEventListener("click", (event) => {
       const button = event.target.closest(".band-pill");
       if (!button) return;
@@ -1350,18 +1396,31 @@
 
     elements.grid.addEventListener("click", (event) => {
       const card = event.target.closest(".word-card");
-      const actionButton = event.target.closest("[data-action]");
-      if (!card || !actionButton) return;
+      if (!card) return;
       const rank = Number(card.dataset.rank);
       const word = wordByRank.get(rank);
       if (!word) return;
-      if (actionButton.dataset.action === "detail") {
-        openDetail(rank);
-      } else if (actionButton.dataset.action === "play") {
+      const actionButton = event.target.closest("[data-action]");
+      const action = actionButton?.dataset.action;
+
+      // 空白处点击：展开 / 收起答案，和句子库保持一致
+      if (!action) {
+        if (window.getSelection()?.toString()) return;
+        answerMode.toggle(rank, card);
+        return;
+      }
+
+      if (action === "reveal") {
+        answerMode.toggle(rank, card);
+      } else if (action === "detail") {
+        // 中译英模式下英文还是隐藏的，先揭开再让用户决定要不要看详情
+        if (answerMode.classesFor(rank).primaryHidden) answerMode.toggle(rank, card);
+        else openDetail(rank);
+      } else if (action === "play") {
         speak(word.word, actionButton);
-      } else if (actionButton.dataset.action === "star") {
+      } else if (action === "star") {
         toggleStar(rank);
-      } else if (actionButton.dataset.action === "mastery") {
+      } else if (action === "mastery") {
         setMastered(rank, !progress.mastered.includes(rank));
       }
     });
@@ -1444,6 +1503,7 @@
       progress.starred = [];
       progress.mastered = [];
       saveProgress();
+      answerMode.reset();
       renderWords();
       elements.resetProgress.dataset.confirm = "";
       elements.resetProgress.textContent = "清除本栏进度";
@@ -1540,6 +1600,7 @@
     applyTheme(document.documentElement.dataset.theme || "light");
     updateVoiceButton();
     updateRateButton();
+    answerMode.reset();
     setSpotlight();
     renderBandPills();
     recordStudyDate();
