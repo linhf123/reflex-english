@@ -40,8 +40,10 @@
     heroProgressBar: document.getElementById("hero-progress-bar"),
     heroProgressText: document.getElementById("hero-progress-text"),
     themeButton: document.getElementById("theme-button"),
-    zhButton: document.getElementById("zh-button"),
-    zhLabel: document.getElementById("zh-label"),
+    answerButton: document.getElementById("answer-button"),
+    answerLabel: document.getElementById("answer-label"),
+    answerIcon: document.getElementById("answer-icon"),
+    directionSwitch: document.getElementById("direction-switch"),
     voiceButton: document.getElementById("voice-button"),
     voiceLabel: document.getElementById("voice-label"),
     rateButton: document.getElementById("rate-button"),
@@ -127,8 +129,8 @@
     visible: PAGE_SIZE,
     practice: null,
     listen: null,
-    // 单张卡片的临时展开状态（id -> 是否显示中文），只在本次会话内有效。
-    zhOverrides: new Map(),
+    // 单张卡片的临时展开状态（id -> 答案是否可见），只在本次会话内有效。
+    answerOverrides: new Map(),
   };
 
   let progress = loadProgress();
@@ -148,7 +150,8 @@
       voiceLang: "en-US",
       rate: 0.9,
       sessions: 0,
-      zhVisible: false,
+      direction: "en2zh",
+      answerVisible: false,
     };
 
     try {
@@ -168,7 +171,9 @@
         voiceLang: saved.voiceLang === "en-GB" ? "en-GB" : "en-US",
         rate: RATE_STEPS.includes(Number(saved.rate)) ? Number(saved.rate) : 0.9,
         sessions: Number.isFinite(saved.sessions) ? saved.sessions : 0,
-        zhVisible: saved.zhVisible === true,
+        direction: saved.direction === "zh2en" ? "zh2en" : "en2zh",
+        // 兼容旧版本的 zhVisible 字段
+        answerVisible: saved.answerVisible === true || saved.zhVisible === true,
       };
     } catch {
       return fallback;
@@ -307,65 +312,104 @@
     `;
   }
 
-  // 搜中文时自动展开释义，否则会搜到一堆看不见的匹配项。
-  function queryForcesZh() {
-    return /[\u3400-\u9fff]/.test(state.query);
+  function isReverse() {
+    return progress.direction === "zh2en";
   }
 
-  function isZhVisible(id) {
-    if (state.zhOverrides.has(id)) return state.zhOverrides.get(id);
-    if (queryForcesZh()) return true;
-    return progress.zhVisible;
+  // 用答案那一侧的语言搜索时自动展开，否则会搜到一堆看不见的匹配项。
+  function queryForcesAnswer() {
+    if (!state.query.trim()) return false;
+    const hasCjk = /[\u3400-\u9fff]/.test(state.query);
+    return isReverse() ? !hasCjk : hasCjk;
   }
 
-  function toggleZh(id) {
-    const next = !isZhVisible(id);
-    state.zhOverrides.set(id, next);
-    const card = elements.grid.querySelector(`.sentence-card[data-id="${id}"]`);
+  function isAnswerVisible(id) {
+    if (state.answerOverrides.has(id)) return state.answerOverrides.get(id);
+    if (queryForcesAnswer()) return true;
+    return progress.answerVisible;
+  }
+
+  function applyCardAnswer(card, visible) {
     if (!card) return;
+    const reverse = isReverse();
+    const target = reverse ? "英文" : "中文";
+    card
+      .querySelector(".card-zh")
+      ?.classList.toggle("is-answer-hidden", !visible && !reverse);
+    card
+      .querySelector(".card-en")
+      ?.classList.toggle("is-answer-hidden", !visible && reverse);
 
     const button = card.querySelector(".card-zh");
-    if (button) {
-      button.classList.toggle("is-zh-hidden", !next);
-      button.title = next ? "点击隐藏中文" : "点击查看中文";
-    }
+    if (button) button.title = `${visible ? "点击隐藏" : "点击查看"}${target}`;
   }
 
-  function setZhVisible(visible, options = {}) {
-    progress.zhVisible = visible;
-    state.zhOverrides.clear();
+  function toggleAnswer(id) {
+    const next = !isAnswerVisible(id);
+    state.answerOverrides.set(id, next);
+    applyCardAnswer(elements.grid.querySelector(`.sentence-card[data-id="${id}"]`), next);
+  }
+
+  function setAnswerVisible(visible, options = {}) {
+    progress.answerVisible = visible;
+    state.answerOverrides.clear();
     saveProgress();
-    updateZhButton();
+    updateAnswerButton();
     renderCards({ animate: false });
     if (options.silent) return;
 
+    const target = isReverse() ? "英文" : "中文";
     if (visible) {
-      showToast("已显示全部中文释义");
+      showToast(`已显示全部${target}`);
     } else {
       showToast(
-        queryForcesZh() ? "搜索中文时保持展开，清空搜索后生效" : "已隐藏全部中文释义",
+        queryForcesAnswer() ? "搜索答案语言时保持展开，清空搜索后生效" : `已隐藏全部${target}`,
       );
     }
   }
 
-  function updateZhButton() {
-    const visible = progress.zhVisible;
-    elements.zhLabel.textContent = visible ? "隐藏中文" : "显示中文";
-    elements.zhButton.classList.toggle("is-on", visible);
-    elements.zhButton.title = visible
-      ? "当前显示中文释义，点击全部隐藏"
-      : "当前隐藏中文释义，点击全部显示";
-    elements.zhButton.setAttribute("aria-label", elements.zhButton.title);
+  function updateAnswerButton() {
+    const reverse = isReverse();
+    const visible = progress.answerVisible;
+    const target = reverse ? "英文" : "中文";
+    elements.answerLabel.textContent = `${visible ? "隐藏" : "显示"}${target}`;
+    elements.answerIcon.textContent = reverse ? "EN" : "中";
+    elements.answerButton.classList.toggle("is-on", visible);
+    elements.answerButton.title = visible
+      ? `当前显示${target}，点击全部隐藏`
+      : `当前隐藏${target}，点击全部显示`;
+    elements.answerButton.setAttribute("aria-label", elements.answerButton.title);
+  }
+
+  function updateDirectionSwitch() {
+    elements.directionSwitch.querySelectorAll("[data-direction]").forEach((button) => {
+      const active = button.dataset.direction === progress.direction;
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-pressed", String(active));
+    });
+  }
+
+  function setDirection(direction) {
+    if (progress.direction === direction) return;
+    progress.direction = direction;
+    state.answerOverrides.clear();
+    saveProgress();
+    updateDirectionSwitch();
+    updateAnswerButton();
+    renderCards({ animate: false });
+    showToast(direction === "zh2en" ? "已切换为中译英" : "已切换为英译中");
   }
 
   function renderCard(sentence, index) {
     const mastered = progress.mastered.includes(sentence.id);
     const starred = progress.starred.includes(sentence.id);
-    const zhShown = isZhVisible(sentence.id);
+    const answerShown = isAnswerVisible(sentence.id);
+    const reverse = isReverse();
     const scene = sceneMap.get(sentence.scene);
     const classes = ["sentence-card"];
     if (mastered) classes.push("is-mastered");
     if (starred) classes.push("is-starred");
+    if (reverse) classes.push("is-reverse");
 
     return `
       <article
@@ -379,17 +423,14 @@
           ${sceneBadge(sentence)}
         </div>
         <div class="card-body">
-          <p class="card-en" lang="en">${highlight(sentence.en, state.query)}</p>
+          <p class="card-en${!answerShown && reverse ? " is-answer-hidden" : ""}" lang="en">${highlight(sentence.en, state.query)}</p>
           <button
-            class="card-zh${zhShown ? "" : " is-zh-hidden"}"
+            class="card-zh${!answerShown && !reverse ? " is-answer-hidden" : ""}"
             type="button"
             lang="zh-CN"
-            data-action="zh"
-            title="${zhShown ? "点击隐藏中文" : "点击查看中文"}"
-          >
-            <span class="card-zh-text">${highlight(sentence.zh, state.query)}</span>
-            <span class="card-zh-dots" aria-hidden="true">· · · · · · · · · · · ·</span>
-          </button>
+            data-action="reveal"
+            title="${answerShown ? "点击隐藏" : "点击查看"}${reverse ? "英文" : "中文"}"
+          >${highlight(sentence.zh, state.query)}</button>
         </div>
         <div class="card-footer">
           <div class="card-actions">
@@ -1375,13 +1416,13 @@
         else if (action === "star") toggleStar(id);
         else if (action === "mastery") setMastered(id, !progress.mastered.includes(id));
         else if (action === "practice") openPractice({ count: 1, singleId: id });
-        else if (action === "zh") toggleZh(id);
+        else if (action === "reveal") toggleAnswer(id);
         return;
       }
 
-      // 点击卡片空白处 = 展开 / 收起中文释义；正在选词时不打断。
+      // 点击卡片空白处 = 展开 / 收起答案；正在选词时不打断。
       if (window.getSelection()?.toString()) return;
-      toggleZh(id);
+      toggleAnswer(id);
     });
 
     elements.loadMore.addEventListener("click", () => {
@@ -1398,8 +1439,12 @@
       applyTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
     });
 
-    elements.zhButton.addEventListener("click", () => {
-      setZhVisible(!progress.zhVisible);
+    elements.answerButton.addEventListener("click", () => {
+      setAnswerVisible(!progress.answerVisible);
+    });
+
+    elements.directionSwitch.querySelectorAll("[data-direction]").forEach((button) => {
+      button.addEventListener("click", () => setDirection(button.dataset.direction));
     });
 
     elements.voiceButton.addEventListener("click", () => {
@@ -1493,14 +1538,16 @@
         voiceLang: "en-US",
         rate: 0.9,
         sessions: 0,
-        zhVisible: false,
+        direction: "en2zh",
+        answerVisible: false,
       };
-      state.zhOverrides.clear();
+      state.answerOverrides.clear();
       saveProgress();
       recordStudyDate();
       updateVoiceButton();
       updateRateButton();
-      updateZhButton();
+      updateAnswerButton();
+      updateDirectionSwitch();
       resetFilters();
       elements.resetProgress.dataset.confirm = "";
       elements.resetProgress.textContent = "清除本机学习记录";
@@ -1663,7 +1710,8 @@
     applyTheme(document.documentElement.dataset.theme || "light");
     updateVoiceButton();
     updateRateButton();
-    updateZhButton();
+    updateAnswerButton();
+    updateDirectionSwitch();
     setTodaySentence();
     renderScenePills();
     recordStudyDate();

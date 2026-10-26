@@ -29,7 +29,7 @@
       })();
     </script>
     <link rel="stylesheet" href="shared/tokens.css?v=20261021-2" />
-    <link rel="stylesheet" href="styles.css?v=20261026-1" />
+    <link rel="stylesheet" href="styles.css?v=20261026-3" />
   </head>
   <body>
     <a class="skip-link" href="#library">跳到句子库</a>
@@ -179,14 +179,14 @@
               <span class="tool-label">主题</span>
             </button>
             <button
-              class="tool-button zh-button"
-              id="zh-button"
+              class="tool-button"
+              id="answer-button"
               type="button"
               aria-label="当前隐藏中文释义，点击显示全部"
               title="当前隐藏中文释义，点击显示全部"
             >
-              <span class="tool-icon" aria-hidden="true">中</span>
-              <span class="tool-label" id="zh-label">显示中文</span>
+              <span class="tool-icon" id="answer-icon" aria-hidden="true">中</span>
+              <span class="tool-label" id="answer-label">显示中文</span>
             </button>
             <button class="nav-practice-button" id="nav-practice" type="button">
               <span class="nav-practice-dot" aria-hidden="true"></span>
@@ -205,6 +205,10 @@
             <h2 id="section-title">全部句子</h2>
           </div>
           <div class="section-heading-right">
+            <div class="direction-switch" id="direction-switch" role="group" aria-label="练习方向">
+              <button class="direction-pill active" type="button" data-direction="en2zh">英译中</button>
+              <button class="direction-pill" type="button" data-direction="zh2en">中译英</button>
+            </div>
             <p id="result-count" role="status" aria-live="polite">1000 句</p>
             <button class="listen-all-button" id="listen-all" type="button">
               <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -527,6 +531,6 @@
     <script src="data/sentences.js?v=20261021-2"></script>
     <script src="shared/speech.js?v=20261021-2"></script>
     <script src="shared/playback.js?v=20261021-2"></script>
-    <script src="app.js?v=20261026-2"></script>
+    <script src="app.js?v=20261026-3"></script>
   </body>
 </html>
